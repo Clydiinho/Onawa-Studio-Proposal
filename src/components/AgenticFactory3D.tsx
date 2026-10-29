@@ -34,6 +34,9 @@ export type AgenticFactory3DProps = {
   className?: string
   /** Clean hero mode: no panels, the machine on the right of a wide frame. */
   embed?: boolean
+  /** Pipeline copy voice: 'retail' (default) or 'mall'. Only the running-text
+      captions change — the machine, stations and animation are identical. */
+  variant?: 'retail' | 'mall'
   /** A station was clicked: 'engine' | 'admin' | 'storefront' | 'cabinet' | 'cashdesk'. */
   onStation?: (id: StationId) => void
   /** The first real frame is drawn. */
@@ -44,6 +47,7 @@ export default function AgenticFactory3D({
   height = '100vh',
   className,
   embed = false,
+  variant = 'retail',
   onStation,
   onReady,
 }: AgenticFactory3DProps) {
@@ -63,6 +67,7 @@ export default function AgenticFactory3D({
       if (cancelled) return
       dispose = initMachineScene(root, getComputedStyle(root).fontFamily, {
         embedded: embed,
+        variant,
         onStation: (id) => handlers.current.onStation?.(id),
         onReady: () => handlers.current.onReady?.(),
       })
@@ -71,7 +76,7 @@ export default function AgenticFactory3D({
       cancelled = true
       dispose?.()
     }
-  }, [embed])
+  }, [embed, variant])
 
   return (
     <div
@@ -102,13 +107,13 @@ export default function AgenticFactory3D({
               muted
               loop
               autoPlay
-              poster="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80"
+              poster={SCENE_COPY[variant].journeyMedia[0].image}
               src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
             />
             <img
               id="journey-img"
-              src="https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80"
-              alt="Retail pipeline stage visual"
+              src={SCENE_COPY[variant].journeyMedia[0].image}
+              alt={SCENE_COPY[variant].alt}
             />
             <div className="journey-media-glare" />
             <div className="journey-live-badge">
@@ -132,8 +137,8 @@ export default function AgenticFactory3D({
             <span id="journey-phase" className="journey-phase">PHASE 01 // 05</span>
             <span id="journey-tag" className="journey-tag">STRATEGY</span>
           </div>
-          <strong id="journey-title">New retail campaign</strong>
-          <p id="journey-detail">Promos & seasonal retail order</p>
+          <strong id="journey-title">{SCENE_COPY[variant].journeyMedia[0].title}</strong>
+          <p id="journey-detail">{SCENE_COPY[variant].journeyMedia[0].detail}</p>
           <div className="journey-line-track">
             <i id="journey-progress" />
           </div>
@@ -188,9 +193,121 @@ declare global {
   }
 }
 
+// Running-text copy for the journey panel, keyed by page variant.
+// The machine, five stations and all animation are identical between
+// variants — only these captions (plus the idle title) swap out.
+const SCENE_COPY: Record<'retail' | 'mall', {
+  journeySteps: string[][]
+  journeyMedia: { step: string; title: string; tag: string; detail: string; image: string }[]
+  idleTitle: string
+  idleDetail: string
+  alt: string
+}> = {
+  retail: {
+    journeySteps: [
+      ['New retail campaign', 'Promos & seasonal retail order'],
+      ['Copy & leaflets', 'Automated print & digital layout'],
+      ['Video production', '4K product spotlights & motion'],
+      ['Omnichannel rollout', 'Social media, screens & digital hub'],
+      ['Campaign live', 'Print-ready assets delivered'],
+    ],
+    journeyMedia: [
+      {
+        step: '01',
+        title: 'New retail campaign',
+        tag: 'STRATEGY',
+        detail: 'Promos, seasonal briefs & retail orders',
+        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '02',
+        title: 'Copy & leaflets',
+        tag: 'LAYOUT',
+        detail: 'Automated weekly print & digital circulars',
+        image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '03',
+        title: 'Video production',
+        tag: 'MOTION LAB',
+        detail: 'Cinematic 4K food & dynamic motion reels',
+        image: 'https://images.unsplash.com/photo-1506617564039-2f3b650b7010?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '04',
+        title: 'Omnichannel rollout',
+        tag: 'DISPATCH',
+        detail: 'Instagram, TikTok, digital screens & store hub',
+        image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '05',
+        title: 'Campaign live',
+        tag: 'DELIVERED',
+        detail: 'Print-ready circulars & live retail publishing',
+        image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=400&q=80',
+      },
+    ],
+    idleTitle: 'Autonomous Retail Studio',
+    idleDetail: '5-station end-to-end creative assembly',
+    alt: 'Retail pipeline stage visual',
+  },
+  mall: {
+    journeySteps: [
+      ['New mall campaign', 'Tenant promos & seasonal centre briefs'],
+      ['Campaign artwork', 'Automated print & digital centre layouts'],
+      ['Video production', '4K campaign & event spotlights'],
+      ['Omnichannel rollout', 'Social media, screens & centre hub'],
+      ['Campaign live', 'Print-ready assets delivered'],
+    ],
+    journeyMedia: [
+      {
+        step: '01',
+        title: 'New mall campaign',
+        tag: 'STRATEGY',
+        detail: 'Tenant promos, new openings & centre briefs',
+        image: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '02',
+        title: 'Campaign artwork',
+        tag: 'LAYOUT',
+        detail: 'Automated print & digital centre layouts',
+        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '03',
+        title: 'Video production',
+        tag: 'MOTION LAB',
+        detail: 'Cinematic 4K campaign & event spotlights',
+        image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '04',
+        title: 'Omnichannel rollout',
+        tag: 'DISPATCH',
+        detail: 'Instagram, TikTok, digital screens & centre hub',
+        image: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=400&q=80',
+      },
+      {
+        step: '05',
+        title: 'Campaign live',
+        tag: 'DELIVERED',
+        detail: 'Print-ready assets & live centre publishing',
+        image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=400&q=80',
+      },
+    ],
+    idleTitle: 'Autonomous Mall Studio',
+    idleDetail: '5-station end-to-end creative assembly',
+    alt: 'Mall pipeline stage visual',
+  },
+}
+
 export type MachineSceneOptions = {
   /** Clean hero: panels hidden, wheel and touch scroll the page. */
   embedded: boolean
+  /** Copy voice carried through to the running journey captions. */
+  variant?: 'retail' | 'mall'
   onStation?: (id: StationId) => void
   onReady?: () => void
 }
@@ -1593,50 +1710,9 @@ function initMachineScene(
 
     const scratch = new THREE.Vector3(),
       anchor = new THREE.Vector3()
-    const journeySteps = [
-      ['New retail campaign', 'Promos & seasonal retail order'],
-      ['Copy & leaflets', 'Automated print & digital layout'],
-      ['Video production', '4K product spotlights & motion'],
-      ['Omnichannel rollout', 'Social media, screens & digital hub'],
-      ['Campaign live', 'Print-ready assets delivered'],
-    ]
-    const journeyMedia = [
-      {
-        step: '01',
-        title: 'New retail campaign',
-        tag: 'STRATEGY',
-        detail: 'Promos, seasonal briefs & retail orders',
-        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '02',
-        title: 'Copy & leaflets',
-        tag: 'LAYOUT',
-        detail: 'Automated weekly print & digital circulars',
-        image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '03',
-        title: 'Video production',
-        tag: 'MOTION LAB',
-        detail: 'Cinematic 4K food & dynamic motion reels',
-        image: 'https://images.unsplash.com/photo-1506617564039-2f3b650b7010?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '04',
-        title: 'Omnichannel rollout',
-        tag: 'DISPATCH',
-        detail: 'Instagram, TikTok, digital screens & store hub',
-        image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '05',
-        title: 'Campaign live',
-        tag: 'DELIVERED',
-        detail: 'Print-ready circulars & live retail publishing',
-        image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=400&q=80',
-      },
-    ]
+    const sceneCopy = SCENE_COPY[options.variant ?? 'retail']
+    const journeySteps = sceneCopy.journeySteps
+    const journeyMedia = sceneCopy.journeyMedia
     let prevJourney = -1,
       lastFrame = performance.now(),
       frameCount = 0,
@@ -1747,7 +1823,7 @@ function initMachineScene(
         if (step !== prevJourney) {
           const item = journeyMedia[step] ?? {
             step: `0${step + 1}`,
-            title: journeySteps[step]?.[0] ?? 'Retail pipeline',
+            title: journeySteps[step]?.[0] ?? sceneCopy.idleTitle,
             tag: 'RUNNING',
             detail: journeySteps[step]?.[1] ?? 'Order processing',
             image: '',
@@ -1782,9 +1858,9 @@ function initMachineScene(
       } else {
         if (prevJourney !== -99) {
           const tEl = $('journey-title')
-          if (tEl) tEl.textContent = 'Autonomous Retail Studio'
+          if (tEl) tEl.textContent = sceneCopy.idleTitle
           const dEl = $('journey-detail')
-          if (dEl) dEl.textContent = '5-station end-to-end creative assembly'
+          if (dEl) dEl.textContent = sceneCopy.idleDetail
           const pPhase = $('journey-phase')
           if (pPhase) pPhase.textContent = 'LIVE PIPELINE'
           const pTag = $('journey-tag')
@@ -1966,12 +2042,15 @@ const STYLES = String.raw`
   contain: layout;
 }
 .agentic-factory-3d {
-  color-scheme: dark;
-  --bg: #000000;
-  --white: #f4f1ea;
+  color-scheme: light;
+
+  /* Light studio: sits on the Onawa white shader background (prop pages).
+     The canvas is cleared to transparent, so only overlay UI themed here. */
+  --bg: transparent;
+  --white: #1c1c1e;
   --amber: #ff7a1a;
-  --muted: #81848b;
-  --line: rgba(244, 241, 234, 0.11);
+  --muted: #5c6068;
+  --line: rgba(28, 28, 30, 0.12);
 }
 .agentic-factory-3d, .agentic-factory-3d * {
   box-sizing: border-box;
@@ -2029,9 +2108,8 @@ const STYLES = String.raw`
   pointer-events: none;
   background: radial-gradient(
     ellipse at 50% 48%,
-    transparent 30%,
-    rgba(0, 0, 0, 0.12) 64%,
-    rgba(0, 0, 0, 0.65) 100%
+    transparent 55%,
+    rgba(0, 0, 0, 0.03) 100%
   );
 }
 .agentic-factory-3d .topbar {
@@ -2068,7 +2146,7 @@ const STYLES = String.raw`
   margin-top: 5px;
   font-size: 9px;
   letter-spacing: 1.55px;
-  color: #73777f;
+  color: #6b7078;
   text-transform: uppercase;
 }
 .agentic-factory-3d .status {
@@ -2077,7 +2155,7 @@ const STYLES = String.raw`
   gap: 8px;
   font-size: 10px;
   letter-spacing: 0.1px;
-  color: #a6a79f;
+  color: #555a62;
 }
 .agentic-factory-3d .status i {
   width: 5px;
@@ -2087,12 +2165,12 @@ const STYLES = String.raw`
   box-shadow: 0 0 10px #ff7a1a60;
 }
 .agentic-factory-3d .status.paused i {
-  background: #777;
+  background: #8a8f96;
   box-shadow: none;
 }
 .agentic-factory-3d .status span:last-child {
   font-variant-numeric: tabular-nums;
-  color: #646971;
+  color: #6b7078;
   margin-left: 12px;
 }
 .agentic-factory-3d .scene-heading {
@@ -2106,7 +2184,7 @@ const STYLES = String.raw`
   gap: 12px;
   font-size: 9px;
   letter-spacing: 1.8px;
-  color: #959790;
+  color: #5f646b;
   text-transform: uppercase;
 }
 .agentic-factory-3d .scene-heading:before {
@@ -2117,7 +2195,7 @@ const STYLES = String.raw`
 }
 .agentic-factory-3d .scene-heading .index {
   margin-left: auto;
-  color: #4e535b;
+  color: #979ca3;
   font-size: 9px;
   letter-spacing: 1px;
 }
@@ -2151,18 +2229,18 @@ const STYLES = String.raw`
   gap: 3px;
   align-items: center;
   padding: 5px;
-  border: 1px solid #ffffff13;
+  border: 1px solid rgba(28, 28, 30, 0.08);
   border-radius: 12px;
-  background: rgba(25, 28, 32, 0.87);
+  background: rgba(255, 255, 255, 0.72);
   box-shadow:
-    0 8px 30px #0003,
-    inset 0 1px 0 #ffffff03;
+    0 8px 30px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 #ffffff80;
   backdrop-filter: blur(16px);
 }
 .agentic-factory-3d .mode-bar button {
   border: 0;
   background: none;
-  color: #a2a4a8;
+  color: #5c6068;
   white-space: nowrap;
   padding: 11px 15px;
   display: flex;
@@ -2176,7 +2254,7 @@ const STYLES = String.raw`
     color 0.2s;
 }
 .agentic-factory-3d .mode-bar button:hover {
-  background: #ffffff08;
+  background: rgba(28, 28, 30, 0.05);
   color: var(--white);
 }
 .agentic-factory-3d .mode-bar button[aria-pressed='true'] {
@@ -2201,13 +2279,13 @@ const STYLES = String.raw`
 .agentic-factory-3d .camera-row .caption {
   font-size: 9px;
   letter-spacing: 1.4px;
-  color: #555b65;
+  color: #5f646b;
   margin-right: 9px;
 }
 .agentic-factory-3d .camera-row button {
   border: 0;
   background: transparent;
-  color: #6e747e;
+  color: #555a62;
   padding: 5px 9px;
   font-size: 10px;
   transition: color 0.2s;
@@ -2257,17 +2335,17 @@ const STYLES = String.raw`
   pointer-events: auto;
 }
 .agentic-factory-3d .wordmark span {
-  color: #a1a49f;
+  color: #5f646b;
 }
 .agentic-factory-3d .hint {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #636972;
+  color: #5f646b;
   font-size: 10px;
 }
 .agentic-factory-3d .hint svg {
-  color: #8c8f91;
+  color: #8a8f96;
 }
 .agentic-factory-3d .footer-center {
   position: absolute;
@@ -2307,12 +2385,12 @@ const STYLES = String.raw`
   margin: 0 0 0 10px;
 }
 .agentic-factory-3d .station-label .label-card {
-  background: #14171bee;
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
   border: 1px solid #ff7a1a40;
   border-radius: 6px;
   padding: 10px 13px;
-  box-shadow: 0 4px 20px #0003;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
 }
 .agentic-factory-3d .station-label .label-title {
   font-weight: 550;
@@ -2323,7 +2401,7 @@ const STYLES = String.raw`
   white-space: nowrap;
 }
 .agentic-factory-3d .station-label .label-title span {
-  color: var(--amber);
+  color: #b45309;
   font:
     9px ui-monospace,
     Menlo,
@@ -2331,7 +2409,7 @@ const STYLES = String.raw`
 }
 .agentic-factory-3d .station-label .label-meta {
   font-size: 9px;
-  color: #8e939c;
+  color: #5c6068;
   margin: 6px 0 0 24px;
   white-space: nowrap;
 }
@@ -2342,10 +2420,10 @@ const STYLES = String.raw`
   opacity: 0;
   transition: opacity 0.15s;
   padding: 11px 14px;
-  border: 1px solid #ffffff1a;
-  background: #171a20ed;
+  border: 1px solid rgba(28, 28, 30, 0.1);
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(12px);
-  box-shadow: 0 8px 32px #0005;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   border-radius: 7px;
   max-width: 240px;
 }
@@ -2358,12 +2436,12 @@ const STYLES = String.raw`
 }
 .agentic-factory-3d #tooltip strong span {
   font-size: 10px;
-  color: var(--amber);
+  color: #b45309;
   margin-right: 8px;
 }
 .agentic-factory-3d #tooltip p {
   font-size: 10px;
-  color: #9b9fa7;
+  color: #555a62;
   margin: 6px 0 0;
   line-height: 1.5;
 }
@@ -2397,7 +2475,7 @@ const STYLES = String.raw`
   width: 92px;
   height: 88px;
   flex-shrink: 0;
-  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.8));
+  filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.28));
 }
 .agentic-factory-3d .journey-triangle-portal {
   width: 100%;
@@ -2491,24 +2569,24 @@ const STYLES = String.raw`
   font-weight: 600;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #ff7a1a;
+  color: #b45309;
 }
 .agentic-factory-3d .journey-tag {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 8px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #8b929d;
-  background: rgba(255, 255, 255, 0.06);
+  color: #5c6068;
+  background: rgba(28, 28, 30, 0.05);
   padding: 1px 6px;
   border-radius: 3px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(28, 28, 30, 0.08);
 }
 .agentic-factory-3d #journey strong {
   display: block;
   font-size: 15px;
   font-weight: 500;
-  color: #f4f1ea;
+  color: #1c1c1e;
   letter-spacing: -0.015em;
   line-height: 1.25;
 }
@@ -2516,14 +2594,14 @@ const STYLES = String.raw`
 .agentic-factory-3d #journey p {
   display: block;
   font-size: 11px;
-  color: #a1a7b1;
+  color: #5c6068;
   margin: 3px 0 10px 0;
   line-height: 1.45;
   font-weight: 400;
 }
 .agentic-factory-3d .journey-line-track {
   height: 1.5px;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(28, 28, 30, 0.15);
   width: 100%;
   position: relative;
   overflow: hidden;
@@ -2550,7 +2628,7 @@ const STYLES = String.raw`
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #8c8f95;
+  color: #555a62;
   font-size: 11px;
   transition: opacity 0.4s;
   z-index: 20;
@@ -2578,7 +2656,7 @@ const STYLES = String.raw`
   right: 27.5%;
   top: 40%;
   border: 1px solid #ff7a1a30;
-  background: #191b1f;
+  background: rgba(255, 255, 255, 0.94);
   padding: 24px;
   border-radius: 12px;
   display: none;
@@ -2590,12 +2668,12 @@ const STYLES = String.raw`
   font-weight: 500;
 }
 .agentic-factory-3d #error p {
-  color: #9da1a8;
+  color: #555a62;
   margin: 8px 0 0;
 }
 .agentic-factory-3d #error button {
-  border: 1px solid #ffffff22;
-  background: #25292e;
+  border: 1px solid rgba(28, 28, 30, 0.14);
+  background: #f1efe9;
   padding: 8px 14px;
   border-radius: 5px;
   margin-top: 14px;
@@ -2606,9 +2684,8 @@ const STYLES = String.raw`
 .agentic-factory-3d.embed .vignette {
   background: radial-gradient(
     ellipse at 71% 48%,
-    transparent 30%,
-    rgba(0, 0, 0, 0.1) 65%,
-    rgba(0, 0, 0, 0.55)
+    transparent 60%,
+    rgba(0, 0, 0, 0.04)
   );
 }
 .agentic-factory-3d.embed .footer {
@@ -2729,7 +2806,7 @@ const STYLES = String.raw`
     display: none;
   }
 .agentic-factory-3d .vignette {
-    background: radial-gradient(ellipse at 50% 47%, transparent 20%, #00000080 100%);
+    background: radial-gradient(ellipse at 50% 47%, transparent 60%, rgba(0, 0, 0, 0.03) 100%);
   }
 .agentic-factory-3d #loading {
     left: 50%;
@@ -2745,10 +2822,10 @@ const STYLES = String.raw`
     bottom: 24px;
     top: auto;
     max-width: none;
-    background: rgba(10, 13, 18, 0.78);
+    background: rgba(255, 255, 255, 0.8);
     padding: 10px 14px;
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(28, 28, 30, 0.08);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     gap: 14px;
@@ -2782,7 +2859,7 @@ const STYLES = String.raw`
     height: 17px;
   }
 .agentic-factory-3d.embed .vignette {
-    background: radial-gradient(ellipse at center, transparent 30%, #00000060 100%);
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0, 0, 0, 0.04) 100%);
   }
 }
 @media (max-width: 360px) {

@@ -4,19 +4,37 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { ArrowRight } from 'lucide-react';
 import { Shader, Swirl, ChromaFlow, FlutedGlass, FilmGrain } from 'shaders/react';
 import { InteractiveFolders } from './components/InteractiveFolders';
-import { Navbar } from './components/Navbar';
+import { PillNav } from './components/PillNav';
 import { RetailStorePage } from './pages/RetailStorePage';
+import { ShoppingMallPage } from './pages/ShoppingMallPage';
+
+export type ProposalPage = 'home' | 'retail-store' | 'shopping-mall';
+
+// Checkout scanner laser line — same separation device as the proposal pages.
+// Track is a thin zinc bar; a pink shimmer sweeps across it on loop.
+// `color` sets the sweep hue — pink by default, neon #ccff00 in the Solution section.
+const ScannerLine: React.FC<{ className?: string; color?: string }> = ({ className = '', color = '#ff2a85' }) => (
+  <div className={`relative h-[2px] w-full max-w-xs bg-zinc-300 overflow-hidden ${className}`}>
+    <div
+      className="absolute inset-y-0 left-0 w-1/3 scanner-sweep animate-[shimmer_2s_infinite]"
+      style={{ '--sweep-color': color } as React.CSSProperties}
+    />
+  </div>
+);
 
 export default function App() {
-  const [currentPage, setCurrentPage] = useState<'home' | 'retail-store'>('home');
+  const [currentPage, setCurrentPage] = useState<ProposalPage>('home');
 
   // Sync hash routing
   useEffect(() => {
     const handleHash = () => {
       if (window.location.hash === '#retail-store') {
         setCurrentPage('retail-store');
+      } else if (window.location.hash === '#shopping-mall') {
+        setCurrentPage('shopping-mall');
       } else {
         setCurrentPage('home');
       }
@@ -27,10 +45,13 @@ export default function App() {
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  const navigateTo = (page: 'home' | 'retail-store') => {
+  const navigateTo = (page: ProposalPage) => {
     setCurrentPage(page);
     if (page === 'retail-store') {
       window.location.hash = '#retail-store';
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (page === 'shopping-mall') {
+      window.location.hash = '#shopping-mall';
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
       window.location.hash = '';
@@ -38,12 +59,86 @@ export default function App() {
     }
   };
 
-  if (currentPage === 'retail-store') {
-    return <RetailStorePage onNavigate={navigateTo} />;
-  }
+  const scrollToSection = (id: string) => {
+    // The campaign pages are the only ones with these section anchors; from the
+    // landing page, nav clicks land on the Retail Store proposal as before.
+    if (currentPage === 'home') {
+      setCurrentPage('retail-store');
+      window.location.hash = '#retail-store';
+    }
+    setTimeout(() => {
+      document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    }, 160);
+  };
 
   return (
-    <div className="min-h-screen bg-[#EFEFEF] text-gray-900 selection:bg-gray-900 selection:text-white font-sans antialiased">
+    <>
+      {/* Site-wide Floating Nav: logo far-left, menu pill centred (proposal pages
+          only), Get Started far-right. Clicking the logo returns to the landing page. */}
+      <div className="fixed top-4 inset-x-0 z-50 pointer-events-auto flex items-center justify-between px-6 sm:px-10 lg:px-12 max-w-7xl mx-auto">
+        <a
+          href="#"
+          onClick={(e) => { e.preventDefault(); navigateTo('home'); }}
+          aria-label="Onawa Studio — back to home"
+          className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-[rgba(38,35,46,0.66)] backdrop-blur-xl shadow-[0_22px_44px_-20px_rgba(0,0,0,0.8),0_6px_16px_-8px_rgba(0,0,0,0.5)] outline-none cursor-pointer transition-[transform,box-shadow] duration-300 ease-out hover:scale-110 hover:shadow-[0_28px_52px_-20px_rgba(0,0,0,0.85),0_8px_20px_-8px_rgba(0,0,0,0.55)]"
+        >
+          <img
+            src="/jj logo icon.png"
+            alt="Onawa Studio"
+            className="w-[38px] h-[38px] object-contain"
+            draggable={false}
+          />
+        </a>
+        {currentPage !== 'home' && (
+          <PillNav
+          items={[
+            {
+              label: 'Problem',
+              href: '#problem',
+              onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('problem'); },
+            },
+            {
+              label: 'Solution',
+              href: '#solution',
+              onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('solution'); },
+            },
+            {
+              label: 'Proof',
+              href: '#proof',
+              onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('proof'); },
+            },
+            {
+              label: 'Offers',
+              href: '#offers',
+              onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('offers'); },
+            },
+          ]}
+          theme="dark"
+          layout="split"
+          surface="glass"
+          itemStyle="pill"
+          hoverEffect="fill"
+          indicator="dot"
+          highlightColor="#f24032"
+          highlightTextColor="#ffffff"
+          />
+        )}
+        <button
+          type="button"
+          onClick={() => scrollToSection('offers')}
+          className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#ccff00] transition-colors shadow-lg cursor-pointer"
+        >
+          <span>Get Started</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {currentPage === 'retail-store' ? (
+        <RetailStorePage onNavigate={navigateTo} />
+      ) : currentPage === 'shopping-mall' ? (
+        <ShoppingMallPage onNavigate={navigateTo} />
+      ) : (
+    <div className="min-h-screen bg-[#EFEFEF] text-gray-900 selection:bg-gray-900 selection:text-white font-sans antialiased text-base leading-[1.5]">
       {/* =========================================================================
           SECTION 1: HERO (Full viewport height)
       ========================================================================= */}
@@ -77,8 +172,7 @@ export default function App() {
           </Shader>
         </div>
 
-        {/* Navigation (z-20, relative) */}
-        <Navbar activePage="home" onNavigate={navigateTo} />
+        {/* Navigation is rendered site-wide at App level (fixed PillNav) */}
 
         {/* Spacer to push content to the bottom of the viewport */}
         <div className="flex-1" />
@@ -91,6 +185,8 @@ export default function App() {
               <span className="text-[13px] sm:text-[14px] text-gray-900 tracking-wide mb-5 sm:mb-8 font-medium block">
                 DESIGN • MOTION • DIGITAL • WEBSITE
               </span>
+
+              <ScannerLine className="mb-5 sm:mb-8" />
 
               <h1 className="leading-[1.02] tracking-[-0.03em] text-gray-900">
                 <span className="block font-black tracking-[-0.03em] text-[clamp(2.2rem,8vw,5rem)] sm:text-[clamp(3.2rem,6.2vw,5.5rem)]">
@@ -109,11 +205,16 @@ export default function App() {
 
             {/* Right Column: 2x Interactive Folders */}
             <div className="w-full lg:w-auto shrink-0 flex justify-center lg:justify-end">
-              <InteractiveFolders onOpenRetailStore={() => navigateTo('retail-store')} />
+              <InteractiveFolders
+                onOpenRetailStore={() => navigateTo('retail-store')}
+                onOpenShoppingMall={() => navigateTo('shopping-mall')}
+              />
             </div>
           </div>
         </div>
       </section>
     </div>
+      )}
+    </>
   );
 }

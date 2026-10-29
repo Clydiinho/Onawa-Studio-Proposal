@@ -3,9 +3,10 @@ import GlassFolder, { FolderFile } from './GlassFolder';
 
 export interface InteractiveFoldersProps {
   onOpenRetailStore?: () => void;
+  onOpenShoppingMall?: () => void;
 }
 
-export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRetailStore }) => {
+export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRetailStore, onOpenShoppingMall }) => {
   // Folder 1: "I'm a retail store" files
   const retailFiles: FolderFile[] = [
     {
@@ -101,10 +102,13 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
             action="more"
             width={290}
             files={mallFiles}
+            onClick={() => {
+              onOpenShoppingMall?.();
+            }}
             menu={[
-              { label: 'Explore Mall Solutions', onSelect: () => {} },
-              { label: 'Campaign Case Studies', onSelect: () => {} },
-              { label: 'Book Mall Strategy Call', onSelect: () => {} },
+              { label: 'Explore Mall Solutions', onSelect: () => onOpenShoppingMall?.() },
+              { label: 'Campaign Case Studies', onSelect: () => onOpenShoppingMall?.() },
+              { label: 'Book Mall Strategy Call', onSelect: () => onOpenShoppingMall?.() },
             ]}
           />
         </div>

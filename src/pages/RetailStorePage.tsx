@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Shader, Swirl, ChromaFlow, FlutedGlass, FilmGrain } from 'shaders/react';
 import AgenticFactory3D from '../components/AgenticFactory3D';
 import LineSidebar from '../components/LineSidebar';
-import PillNav from '../components/PillNav';
-import { 
-  ArrowLeft, Sparkles, Tag, FileText, Film, Share2, Zap, 
+import {
+  Tag, FileText, Film, Share2, Zap,
   ThumbsUp, MessageSquare, Heart, Bookmark, Send, Play, 
   CheckCircle2, Globe, Phone, MoreHorizontal, Volume2,
   MessageCircle, ShoppingBag, ShoppingCart, Calendar, Users, 
@@ -144,7 +144,7 @@ const RETAIL_PACKAGES: RetailPackage[] = [
     visualMessage: 'THE EXTRA AISLE',
     shortDesc: 'More room in the basket. More creative on the shelves.',
     accentColor: '#ff2a85',
-    badgeBg: 'bg-[#ff2a85] text-white',
+    badgeBg: 'bg-[#DB0C36] text-white',
     cardBorderClass: 'border-2 border-pink-500/30',
     stamp: 'MORE REQUESTS. MORE FORMATS. MORE FLEXIBILITY.',
     stampBorder: 'border-pink-500 text-pink-600',
@@ -281,23 +281,67 @@ const BarcodeGraphic: React.FC<{ code: string }> = ({ code }) => (
   </div>
 );
 
+// Checkout scanner laser line — reusable separation line.
+// Track is a thin zinc bar; a colored shimmer sweeps across it on loop.
+// w-full + max-w-xs keeps a width even inside flex columns (fit-content would collapse to 0).
+// `color` sets the sweep hue — pink by default, neon #ccff00 in the Solution section.
+const ScannerLine: React.FC<{ className?: string; color?: string }> = ({ className = '', color = '#ff2a85' }) => (
+  <div className={`relative h-[2px] w-full max-w-xs bg-zinc-300 overflow-hidden ${className}`}>
+    <div
+      className="absolute inset-y-0 left-0 w-1/3 scanner-sweep animate-[shimmer_2s_infinite]"
+      style={{ '--sweep-color': color } as React.CSSProperties}
+    />
+  </div>
+);
+
 export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) => {
-  const [scrollY, setScrollY] = useState(0);
   const [activePlatform, setActivePlatform] = useState<'facebook' | 'instagram' | 'tiktok' | 'whatsapp'>('facebook');
   const [selectedAssetIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
   const [isExpandedImage, setIsExpandedImage] = useState(false);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
+  const heroRef = useRef<HTMLHeadingElement>(null);
 
+  // Width fit for "DESERVES": ratio of "Your store"'s width to "DESERVES"'s
+  // natural width, written into --title-fit and consumed by .title-fit-width.
   useEffect(() => {
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
+    const h1 = heroRef.current;
+    if (!h1) return;
+    const target = h1.querySelector<HTMLElement>('.hero-title > span:first-child span');
+    const fit = h1.querySelector<HTMLElement>('.title-fit-width');
+    if (!target || !fit) return;
+
+    let raf = 0;
+    const textWidth = (el: HTMLElement) => {
+      const r = document.createRange();
+      r.selectNodeContents(el);
+      return r.getBoundingClientRect().width;
     };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    const applyFit = () => {
+      fit.style.setProperty('--title-fit', '1');
+      const fitWidth = textWidth(fit);
+      if (fitWidth <= 0) return;
+      const ratio = textWidth(target) / fitWidth;
+      // clamp the ratio: optically honest match, but never explodes or shrinks into unreadable territory
+      const bounded = Math.min(2, Math.max(0.6, ratio));
+      fit.style.setProperty('--title-fit', bounded.toFixed(4));
+    };
+    const schedule = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(applyFit);
+    };
+
+    document.fonts.ready.then(schedule);
+    const ro = new ResizeObserver(schedule);
+    ro.observe(h1);
+    window.addEventListener('resize', schedule);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener('resize', schedule);
+    };
   }, []);
 
-  const scrollProgress = Math.min(1, Math.max(0, scrollY / 300));
   const currentAsset = CAMPAIGN_ASSETS[selectedAssetIndex];
 
   const handleWhatsAppEnquiry = (pkgName: string, price: string) => {
@@ -350,7 +394,40 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
   ];
 
   return (
-    <div className="relative min-h-screen bg-[#000000] text-white selection:bg-[#ccff00] selection:text-black overflow-x-hidden">
+    <div className="relative min-h-screen text-[#1c1c1e] selection:bg-[#ccff00] selection:text-black overflow-x-hidden">
+      {/* =========================================================================
+          BACKGROUND — the same white shader as the landing page (single shared
+          stack, fixed so it stays behind the whole scroll; pointer-events-none
+          and z-0 so every interaction layer sits above it).
+      ========================================================================= */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <Shader className="w-full h-full">
+          <Swirl colorA="#ffffff" colorB="#f0f0f0" detail={1.7} />
+          <ChromaFlow
+            baseColor="#ffffff"
+            downColor="#ff5f03"
+            leftColor="#ff5f03"
+            rightColor="#ff5f03"
+            upColor="#ff5f03"
+            momentum={13}
+            radius={3.5}
+          />
+          <FlutedGlass
+            aberration={0.61}
+            angle={31}
+            frequency={8}
+            highlight={0.12}
+            highlightSoftness={0}
+            lightAngle={-90}
+            refraction={4}
+            shape="rounded"
+            softness={1}
+            speed={0.15}
+          />
+          <FilmGrain strength={0.05} />
+        </Shader>
+      </div>
+
       {/* Receipt Styling Definitions from attached code */}
       <style>{`
         /* Ink Stamp Overlay Styling */
@@ -424,14 +501,14 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
         .receipt-paper {
           background-color: #f6f6f2;
-          box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+          box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.16), 0 0 0 1px rgba(0, 0, 0, 0.04);
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .receipt-paper:hover {
           transform: translateY(-8px);
-          box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.7), 0 0 45px rgba(255, 255, 255, 0.4);
-          border-color: rgba(255, 255, 255, 0.8);
+          box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.24);
+          border-color: rgba(0, 0, 0, 0.1);
         }
 
         .text-thermal-ink {
@@ -452,84 +529,15 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
         }
       `}</style>
 
-      {/* Matte Grid Texture Lines Background Pattern */}
-      <div 
-        className="absolute inset-0 pointer-events-none z-0 opacity-40"
-        style={{
-          backgroundImage: `
-            linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px)
-          `,
-          backgroundSize: '48px 48px',
-        }}
-      />
-
-      {/* Top Floating PillNav & Get Started Button */}
-      <div className="fixed top-4 inset-x-0 z-50 pointer-events-auto flex items-center justify-between px-6 sm:px-10 lg:px-12 max-w-7xl mx-auto">
-        <PillNav
-          logo={<Sparkles className="w-4 h-4 text-[#ccff00]" />}
-          logoAlt="Onawa Studio"
-          logoHref="#"
-          items={[
-            { 
-              label: 'Problem', 
-              href: '#problem', 
-              onClick: (e: React.MouseEvent) => { 
-                e.preventDefault(); 
-                document.getElementById('problem')?.scrollIntoView({ behavior: 'smooth' }); 
-              } 
-            },
-            { 
-              label: 'Solution', 
-              href: '#solution', 
-              onClick: (e: React.MouseEvent) => { 
-                e.preventDefault(); 
-                document.getElementById('solution')?.scrollIntoView({ behavior: 'smooth' }); 
-              } 
-            },
-            { 
-              label: 'Proof', 
-              href: '#proof', 
-              onClick: (e: React.MouseEvent) => { 
-                e.preventDefault(); 
-                document.getElementById('proof')?.scrollIntoView({ behavior: 'smooth' }); 
-              } 
-            },
-            { 
-              label: 'Offers', 
-              href: '#offers', 
-              onClick: (e: React.MouseEvent) => { 
-                e.preventDefault(); 
-                document.getElementById('offers')?.scrollIntoView({ behavior: 'smooth' }); 
-              } 
-            },
-          ]}
-          theme="dark"
-          layout="split"
-          surface="glass"
-          itemStyle="pill"
-          hoverEffect="fill"
-          indicator="dot"
-        />
-        <button
-          type="button"
-          onClick={() => document.getElementById('offers')?.scrollIntoView({ behavior: 'smooth' })}
-          className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#ccff00] transition-colors shadow-lg cursor-pointer"
-        >
-          <span>Get Started</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
       {/* Global Decorative LineSidebar on the left side of the whole site */}
       <div className="fixed left-6 top-1/2 -translate-y-1/2 z-50 pointer-events-auto hidden 2xl:block">
-        <div className="bg-black/70 backdrop-blur-xl border border-white/15 p-4 rounded-3xl shadow-2xl">
-          <div className="text-[10px] font-mono text-[#ccff00] uppercase tracking-widest mb-3 text-center">ONAWA STUDIO</div>
+        <div className="bg-white/60 backdrop-blur-xl border border-black/10 p-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
+          <div className="text-[10px] font-mono text-[#4d7c0f] uppercase tracking-widest mb-3 text-center">ONAWA STUDIO</div>
           <LineSidebar
             items={['Retail Reality', 'Promos & Ads', 'Digital Leaflets', 'Motion Labs', 'Social Feed', 'Websites & Apps', 'Receipt Pricing']}
-            accentColor="#ccff00"
-            textColor="#a1a1aa"
-            markerColor="#52525b"
+            accentColor="#DB0C36"
+            textColor="#52525b"
+            markerColor="#a1a1aa"
             showIndex={true}
             showMarker={true}
             proximityRadius={90}
@@ -558,85 +566,51 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
         />
 
         {/* Left Side Content Overlay */}
-        <div className="absolute inset-0 z-20 pointer-events-none flex items-center">
-          <div className="w-full max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 pt-24 sm:pt-28 lg:pt-0">
-            <div className="max-w-xl lg:max-w-2xl pointer-events-auto">
-
-
-              <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 mb-8 backdrop-blur-md">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_8px_#ff2a85] animate-pulse" />
-                <span className="text-[11px] font-mono tracking-[0.18em] text-[#ff2a85] uppercase font-medium">
-                  Autonomous Creative Pipeline
+        <div className="absolute inset-0 z-20 pointer-events-none flex items-stretch">
+          <div className="w-full max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 pt-24 sm:pt-28 lg:pt-0 pb-6 sm:pb-10 flex flex-col h-full">
+            {/* Hero title — centers in the space above the sidebar, biased slightly down */}
+            <div className="max-w-xl lg:max-w-2xl pointer-events-auto flex-1 flex flex-col justify-center translate-y-6 lg:translate-y-10">
+              <h1 ref={heroRef} className="hero-title text-[#1c1c1e] mb-8 sm:mb-10">
+                <span className="block hero-line1">
+                  <span className="color-salmon font-outfit whitespace-nowrap"><span className="font-glamour-initial">Y</span>our store</span>
                 </span>
-              </div>
-
-              <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-[4.2rem] xl:text-[4.6rem] font-light tracking-[-0.035em] leading-[0.96] mb-8 sm:mb-10">
-                <span className="block font-bold tracking-tight text-[#ff2a85] drop-shadow-[0_0_25px_rgba(255,42,133,0.35)]">
-                  Your store <span className="italic uppercase">DESERVES</span>
-                </span>
-                <span className="block mt-1 text-white font-light text-2xl sm:text-4xl md:text-5xl">
-                  its own <span 
-                    className="text-3xl sm:text-5xl md:text-6xl font-['Instrument_Serif',serif] italic font-normal transition-all duration-300"
-                    style={{
-                      color: scrollProgress > 0.1 ? '#ff2a85' : '#ffffff',
-                      textShadow: scrollProgress > 0.1 ? '0 0 30px rgba(255, 42, 133, 0.5)' : 'none',
-                    }}
-                  >
-                    creative team.
-                  </span>
+                <span className="block font-griffits color-heading uppercase title-fit-width">DESERVES</span>
+                <span className="block hero-crossover">
+                  <span className="color-heading font-outfit hero-smaller">it's</span>{' '}
+                  <span className="hero-own color-salmon font-outfit">own</span>{' '}
+                  <span className="color-salmon font-griffits"><span className="font-glamour-initial glamour-tight">C</span>reative team</span>
                 </span>
               </h1>
-
-              <div className="space-y-3.5 max-w-lg">
-                <div className="flex items-center gap-3.5 group">
-                  <div className="w-5 h-5 rounded-full bg-[#ff2a85]/15 border border-[#ff2a85]/40 flex items-center justify-center shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_6px_#ff2a85]" />
-                  </div>
-                  <span className="text-sm sm:text-base font-normal text-zinc-200 tracking-tight">
-                    Promos & Weekly Deals
-                  </span>
-                  <span className="text-[11px] text-zinc-500 font-mono tracking-wider ml-auto hidden sm:inline-block">
-                    01 // CAMPAIGNS
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3.5 group">
-                  <div className="w-5 h-5 rounded-full bg-[#ff2a85]/15 border border-[#ff2a85]/40 flex items-center justify-center shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_6px_#ff2a85]" />
-                  </div>
-                  <span className="text-sm sm:text-base font-normal text-zinc-200 tracking-tight">
-                    Print & Digital Leaflets
-                  </span>
-                  <span className="text-[11px] text-zinc-500 font-mono tracking-wider ml-auto hidden sm:inline-block">
-                    02 // CIRCULARS
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3.5 group">
-                  <div className="w-5 h-5 rounded-full bg-[#ff2a85]/15 border border-[#ff2a85]/40 flex items-center justify-center shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_6px_#ff2a85]" />
-                  </div>
-                  <span className="text-sm sm:text-base font-normal text-zinc-200 tracking-tight">
-                    Automated 4K Video
-                  </span>
-                  <span className="text-[11px] text-zinc-500 font-mono tracking-wider ml-auto hidden sm:inline-block">
-                    03 // MOTION LAB
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3.5 group">
-                  <div className="w-5 h-5 rounded-full bg-[#ff2a85]/15 border border-[#ff2a85]/40 flex items-center justify-center shrink-0">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_6px_#ff2a85]" />
-                  </div>
-                  <span className="text-sm sm:text-base font-normal text-zinc-200 tracking-tight">
-                    Omnichannel Social Media
-                  </span>
-                  <span className="text-[11px] text-zinc-500 font-mono tracking-wider ml-auto hidden sm:inline-block">
-                    04 // MULTI-FEED
-                  </span>
-                </div>
-              </div>
             </div>
+
+            {/* Service list — pinned to the viewport bottom, aligned with the phases panel */}
+            <div className="max-w-lg pointer-events-auto mt-auto">
+              <LineSidebar
+                  items={[
+                    'Promos & Weekly Deals',
+                    'Print & Digital Leaflets',
+                    'Automated 4K Video',
+                    'Omnichannel Social Media'
+                  ]}
+                  accentColor="#DB0C36"
+                  textColor="#3f3f46"
+                  markerColor="#52525b"
+                  showIndex={true}
+                  showMarker={true}
+                  proximityRadius={100}
+                  maxShift={30}
+                  falloff="smooth"
+                  markerLength={48}
+                  markerGap={12}
+                  tickScale={0.5}
+                  scaleTick={true}
+                  itemGap={16}
+                  fontSize={1.05}
+                  smoothing={100}
+                  defaultActive={null}
+                  onItemClick={(index, label) => console.log('Hero service:', index, label)}
+                />
+              </div>
           </div>
         </div>
       </main>
@@ -644,7 +618,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       {/* =========================================================================
           THE RETAIL REALITY SECTION (Upgraded Split Layout with Staff Planning Video on Left & Right-Aligned Text)
       ========================================================================= */}
-      <section id="problem" className="relative z-20 bg-[#000000] py-28 sm:py-36 border-t border-white/15 overflow-hidden">
+      <section id="problem" className="relative z-20 py-28 sm:py-36 border-t border-black/10 overflow-hidden">
         {/* Ambient Glows */}
         <div className="absolute top-1/2 left-10 w-[500px] h-[500px] bg-[#ff2a85]/10 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-10 right-10 w-[500px] h-[500px] bg-[#ccff00]/10 rounded-full blur-[140px] pointer-events-none" />
@@ -654,7 +628,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             
             {/* Left Column: Supermarket Staff Planning Video */}
             <div className="lg:col-span-6 relative">
-              <div className="relative rounded-3xl overflow-hidden bg-zinc-950 border-2 border-white/15 shadow-[0_0_50px_rgba(255,42,133,0.2)] aspect-[16/10] group">
+              <div className="relative rounded-3xl overflow-hidden bg-zinc-950 border-2 border-black/10 shadow-[0_30px_60px_rgba(0,0,0,0.18)] aspect-[16/10] group">
                 <video
                   src="/Supermarket_staff_planning.mp4"
                   autoPlay
@@ -671,32 +645,37 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               </div>
             </div>
 
-            {/* Right Column: Upgraded The Retail Reality Copy (Right-Aligned) */}
-            <div className="lg:col-span-6 text-right flex flex-col items-end">
-              <div className="mb-6 inline-flex items-center gap-2.5 rounded-full bg-white/10 px-3.5 py-1.5 ring-1 ring-white/15 backdrop-blur-md">
+            {/* Right Column: The Retail Reality Copy — copy left-aligned next to the video, pill stays right */}
+            <div className="lg:col-span-6 flex flex-col">
+              <div className="mb-6 self-end inline-flex items-center gap-2.5 rounded-full bg-black/[0.04] px-3.5 py-1.5 ring-1 ring-black/10 backdrop-blur-md">
                 <span className="inline-flex items-center text-xs font-semibold text-neutral-950 bg-[#ff2a85] rounded-full py-0.5 px-2 font-mono">
                   REALITY
                 </span>
-                <span className="text-xs font-mono font-medium text-white/90 uppercase tracking-widest">
+                <span className="text-xs font-mono font-medium text-zinc-700 uppercase tracking-widest">
                   The Retail Reality
                 </span>
               </div>
 
-              <h2 className="text-4xl sm:text-5xl lg:text-[4.2rem] leading-[1.05] text-white tracking-tight font-black uppercase mb-8">
-                SPECIALS DON'T<br />
-                <span className="text-[#ff2a85] font-['Instrument_Serif',serif] italic font-normal lowercase tracking-normal">
-                  promote themselves.
+              <h2 className="type-title text-[#1c1c1e] mb-6">
+                <span className="block">
+                  <span className="fancy-initial">S</span><span className="font-outfit font-medium">pecials don't</span>
+                </span>
+                <span className="block -mt-1.5 text-[#DB0C36]">
+                  <span className="font-griffits">Promote</span>{' '}
+                  <span className="font-outfit font-medium">themselves.</span>
                 </span>
               </h2>
 
-              <div className="space-y-6 text-base sm:text-lg text-white/80 font-light leading-relaxed max-w-xl">
-                <p className="text-zinc-200 font-normal">
+              <ScannerLine className="mb-8" />
+
+              <div className="type-lead space-y-6 text-zinc-600 font-light leading-relaxed max-w-xl">
+                <p className="text-[#1c1c1e] font-normal">
                   New prices. Weekend specials. Fresh stock. Payday madness. Another leaflet due yesterday.
                 </p>
-                <p>
+                <p className="text-zinc-500">
                   Your store never runs out of things to promote. But coming up with the designs, getting them ready and keeping your pages active? That's a whole other shopping list.
                 </p>
-                <p className="text-white font-medium text-lg sm:text-xl pt-4 border-t border-white/20">
+                <p className="text-[#1c1c1e] font-medium text-lg sm:text-xl pt-4 border-t border-black/10">
                   Good thing you don't have to do it all yourself.
                 </p>
               </div>
@@ -707,14 +686,14 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       </section>
 
       {/* Solution Section (Neon Yellow-Green Theme with Clear Background Images & React Bits LineSidebar) */}
-      <section id="solution" className="relative z-20 bg-[#000000] py-28 sm:py-36 border-t border-[#ccff00]/25 overflow-hidden">
+      <section id="solution" className="relative z-20 py-28 sm:py-36 border-t border-black/10 overflow-hidden">
         {/* Dynamic Full Scale Background Image (Clear, No Gradient Overlay) */}
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           {features.map((feature, idx) => (
             <div
               key={feature.id}
               className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-                activeFeatureIndex === idx ? 'opacity-55 scale-100' : 'opacity-0 scale-105'
+                activeFeatureIndex === idx ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
               }`}
             >
               <img
@@ -736,14 +715,18 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               </span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white leading-[1.08] mb-6">
-              YOU SELL THE GOODS.<br />
-              <span className="text-[#ccff00] drop-shadow-[0_0_25px_rgba(204,255,0,0.4)]">
-                WE MAKE THEM LOOK GOOD.
+            <h2 className="type-title text-white mb-6">
+              <span className="block">
+                <span className="font-glamour-initial">Y</span><span className="font-outfit font-medium">ou sell the </span><span className="font-griffits uppercase">Goods.</span>
+              </span>
+              <span className="block -mt-1.5 text-[#ccff00] drop-shadow-[0_0_25px_rgba(204,255,0,0.4)]">
+                <span className="font-outfit font-medium">we make them </span><span className="font-griffits uppercase">look good.</span>
               </span>
             </h2>
 
-            <p className="text-lg sm:text-xl text-zinc-300 font-light leading-relaxed">
+            <ScannerLine className="mb-8" color="#ccff00" />
+
+            <p className="type-lead-oneline text-zinc-300 font-light">
               Think of Onawa as your creative department — without another desk to squeeze into the office.
             </p>
           </div>
@@ -766,7 +749,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       {feature.icon}
                     </div>
                     <div>
-                      <span className="text-[10px] font-mono text-zinc-400 block mb-0.5">
+                      <span className="text-[0.625rem] font-mono text-zinc-400 block mb-0.5">
                         {feature.tag}
                       </span>
                       <h3 className={`text-base sm:text-lg font-bold tracking-tight transition-colors ${
@@ -818,25 +801,31 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       </section>
 
       {/* PROOF SECTION (Interactive Social Media Portfolio Showcase) */}
-      <section id="proof" className="relative z-20 bg-[#000000] py-28 sm:py-36 border-t border-white/15 overflow-hidden">
+      <section id="proof" className="relative z-20 py-28 sm:py-36 border-t border-black/10 overflow-hidden">
         <div className="absolute top-1/3 right-10 w-[500px] h-[500px] bg-[#ff2a85]/10 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-10 left-10 w-[500px] h-[500px] bg-[#ccff00]/10 rounded-full blur-[140px] pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-12 relative z-10">
           <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 mb-6 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] border border-black/10 mb-6 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_8px_#ff2a85] animate-pulse" />
-              <span className="text-xs font-mono tracking-widest text-[#ff2a85] uppercase font-semibold">
+              <span className="text-xs font-mono tracking-widest text-[#DB0C36] uppercase font-semibold">
                 THE PROOF
               </span>
             </div>
 
-            <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white mb-6 uppercase whitespace-nowrap">
-              LESS TALK. MORE <span className="text-[#ff2a85] italic font-['Instrument_Serif',serif] text-4xl sm:text-6xl">“WHO MADE THAT?”</span>
+            <h2 className="type-title text-[#1c1c1e] mb-6">
+              <span className="block">
+                <span className="font-glamour-initial">L</span><span className="font-outfit font-medium">ess talk. more </span>
+              </span>
+              <span className="block -mt-1.5 text-[#DB0C36] font-griffits uppercase">“WHO MADE THAT?”</span>
             </h2>
 
-            <p className="text-lg sm:text-xl text-zinc-300 font-light max-w-2xl mx-auto">
-              “Your specials deserve more than a price tag. See how good they could look on your socials.”
+            <ScannerLine className="mx-auto mb-8" />
+
+            <p className="type-lead text-zinc-600 font-light max-w-2xl mx-auto">
+              “Your specials deserve more than a price tag.<br />
+              See how good they could look on your socials.”
             </p>
           </div>
 
@@ -848,7 +837,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-semibold text-sm transition-all cursor-pointer ${
                 activePlatform === 'facebook'
                   ? 'bg-[#1877F2] text-white shadow-[0_0_25px_rgba(24,119,242,0.4)] scale-105'
-                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border border-white/10'
+                  : 'bg-white/70 hover:bg-white text-zinc-700 border border-black/10 shadow-sm'
               }`}
             >
               <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center text-[#1877F2] font-bold text-xs">
@@ -863,7 +852,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-semibold text-sm transition-all cursor-pointer ${
                 activePlatform === 'instagram'
                   ? 'bg-gradient-to-r from-[#833ab4] via-[#fd1d1d] to-[#fcb045] text-white shadow-[0_0_25px_rgba(253,29,29,0.4)] scale-105'
-                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border border-white/10'
+                  : 'bg-white/70 hover:bg-white text-zinc-700 border border-black/10 shadow-sm'
               }`}
             >
               <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
@@ -878,7 +867,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-semibold text-sm transition-all cursor-pointer ${
                 activePlatform === 'tiktok'
                   ? 'bg-zinc-900 border border-[#25F4EE] text-[#25F4EE] shadow-[0_0_25px_rgba(37,244,238,0.3)] scale-105'
-                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border border-white/10'
+                  : 'bg-white/70 hover:bg-white text-zinc-700 border border-black/10 shadow-sm'
               }`}
             >
               <Film className="w-5 h-5" />
@@ -891,7 +880,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               className={`flex items-center gap-2.5 px-6 py-3.5 rounded-2xl font-semibold text-sm transition-all cursor-pointer ${
                 activePlatform === 'whatsapp'
                   ? 'bg-[#25D366] text-black font-bold shadow-[0_0_25px_rgba(37,211,102,0.4)] scale-105'
-                  : 'bg-white/[0.04] hover:bg-white/[0.08] text-zinc-300 border border-white/10'
+                  : 'bg-white/70 hover:bg-white text-zinc-700 border border-black/10 shadow-sm'
               }`}
             >
               <MessageCircle className="w-5 h-5" />
@@ -900,7 +889,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
           </div>
 
           {/* Platform Preview Container */}
-          <div className="max-w-4xl mx-auto rounded-3xl bg-zinc-950/80 border border-white/15 p-4 sm:p-8 backdrop-blur-2xl shadow-2xl relative">
+          <div className="max-w-4xl mx-auto rounded-3xl bg-white/60 border border-black/10 p-4 sm:p-8 backdrop-blur-2xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] relative">
             
             {/* FACEBOOK PREVIEW */}
             {activePlatform === 'facebook' && (
@@ -1061,7 +1050,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       <strong className="text-white mr-2">onawafresh.market</strong>
                       {currentAsset.caption} <span className="text-[#3897f0]">{currentAsset.hashtags}</span>
                     </p>
-                    <p className="text-[11px] text-zinc-500 uppercase tracking-wider">{currentAsset.timestamp}</p>
+                    <p className="text-[0.6875rem] text-zinc-400 uppercase tracking-wider">{currentAsset.timestamp}</p>
                   </div>
                 </div>
               </div>
@@ -1235,7 +1224,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       {/* =========================================================================
           OFFER SECTION — RECEIPT-INSPIRED PACKAGE DESIGN
       ========================================================================= */}
-      <section id="offers" className="relative z-20 bg-[#000000] py-28 sm:py-36 border-t border-white/15 overflow-hidden">
+      <section id="offers" className="relative z-20 py-28 sm:py-36 border-t border-black/10 overflow-hidden">
         {/* Ambient Glows */}
         <div className="absolute top-1/4 left-1/4 w-[600px] h-[600px] bg-[#ccff00]/5 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] bg-[#ff2a85]/5 rounded-full blur-[140px] pointer-events-none" />
@@ -1244,29 +1233,30 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
           
           {/* Section Introduction */}
           <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-20">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.04] border border-white/10 mb-6 backdrop-blur-md">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] border border-black/10 mb-6 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_8px_#ccff00] animate-pulse" />
-              <span className="text-xs font-mono tracking-widest text-[#ccff00] uppercase font-semibold">
+              <span className="text-xs font-mono tracking-widest text-[#4d7c0f] uppercase font-semibold">
                 YOUR MONTHLY CREATIVE SHOPPING LIST
               </span>
             </div>
 
-            <h2 className="text-4xl sm:text-6xl font-black tracking-tight text-white mb-6 uppercase">
-              GOOD CREATIVE. <span className="text-[#ccff00] drop-shadow-[0_0_20px_rgba(204,255,0,0.35)]">SCANNED. SORTED.</span>
+            <h2 className="type-section text-[#1c1c1e] mb-6">
+              <span className="block">
+                <span className="fancy-initial">G</span><span className="font-outfit font-medium">ood </span><span className="font-griffits uppercase">creative.</span>
+              </span>
+              <span className="block mt-0.5 font-outfit font-medium text-[#4d7c0f]">scanned. sorted.</span>
             </h2>
 
-            <p className="text-lg sm:text-xl text-zinc-300 font-light max-w-2xl mx-auto mb-3">
+            <p className="type-lead text-zinc-600 font-light max-w-2xl mx-auto mb-3">
               “Pick your package, and let’s get your store looking like the main event.”
             </p>
 
-            <p className="text-sm font-mono text-zinc-500 uppercase tracking-wider">
+            <p className="type-ui font-mono text-zinc-500 uppercase tracking-wider">
               Three packages. One creative partner. No long-term contract.
             </p>
 
             {/* Subtle Checkout Scanner Laser Line Visual Graphic */}
-            <div className="relative mt-8 max-w-xs mx-auto h-[2px] bg-zinc-800 overflow-hidden">
-              <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r from-transparent via-[#ff2a85] to-transparent animate-[shimmer_2s_infinite]" />
-            </div>
+            <ScannerLine className="mt-8 mx-auto" />
           </div>
 
           {/* ==================== 3 TILL SLIP OFFER CARDS NEXT TO EACH OTHER ==================== */}
@@ -1459,30 +1449,30 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
           {/* Terms, Scope & Turnaround Policy Card */}
           <div className="max-w-4xl mx-auto mb-16">
-            <div className="p-6 sm:p-8 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-xl">
-              <div className="flex items-center gap-2.5 mb-4 font-mono text-xs font-semibold text-[#ccff00] uppercase tracking-wider">
+            <div className="p-6 sm:p-8 rounded-3xl bg-white/60 border border-black/10 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
+              <div className="flex items-center gap-2.5 mb-4 font-mono text-xs font-semibold text-[#4d7c0f] uppercase tracking-wider">
                 <Info className="w-4 h-4" />
                 <span>TERMS OF ENGAGEMENT & WORKING PROCESS</span>
               </div>
-              <ul className="space-y-2.5 text-xs sm:text-sm font-mono text-zinc-300 leading-relaxed">
+              <ul className="space-y-2.5 text-xs sm:text-sm font-mono text-zinc-600 leading-relaxed">
                 <li className="flex items-start gap-2">
-                  <span className="text-[#ccff00] shrink-0 font-bold">•</span>
+                  <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
                   <span>Requests are handled one at a time to ensure maximum focus and creative quality.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#ccff00] shrink-0 font-bold">•</span>
+                  <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
                   <span>Please allow at least one day before your intended release date for standard turnaround.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#ccff00] shrink-0 font-bold">•</span>
+                  <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
                   <span>Rush requests depend on studio availability and may incur an additional expediting fee.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#ccff00] shrink-0 font-bold">•</span>
+                  <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
                   <span>Printing costs are not included. All deliverables are provided as production-ready digital and high-resolution print files.</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-[#ccff00] shrink-0 font-bold">•</span>
+                  <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
                   <span>Social media management covers scheduling and publishing the created designs; paid advertising budgets, customer service and community management are not included.</span>
                 </li>
               </ul>
@@ -1491,57 +1481,57 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
           {/* Shared Terms & Reassurance Grid (4 Icon Cards) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-6xl mx-auto">
-            <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-start gap-3.5 backdrop-blur-sm">
-              <div className="w-9 h-9 rounded-xl bg-[#ccff00]/10 border border-[#ccff00]/30 flex items-center justify-center text-[#ccff00] shrink-0 mt-0.5">
+            <div className="p-5 rounded-2xl bg-white/60 border border-black/10 flex items-start gap-3.5 backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+              <div className="w-9 h-9 rounded-xl bg-[#ccff00]/20 border border-[#ccff00]/50 flex items-center justify-center text-[#4d7c0f] shrink-0 mt-0.5">
                 <Calendar className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider mb-1">
+                <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
                   MONTH-TO-MONTH
                 </h4>
-                <p className="text-xs text-zinc-400 leading-snug font-light">
+                <p className="text-xs text-zinc-500 leading-snug font-light">
                   No long-term contract. Cancel or pause whenever your store needs.
                 </p>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-start gap-3.5 backdrop-blur-sm">
-              <div className="w-9 h-9 rounded-xl bg-[#ff2a85]/10 border border-[#ff2a85]/30 flex items-center justify-center text-[#ff2a85] shrink-0 mt-0.5">
+            <div className="p-5 rounded-2xl bg-white/60 border border-black/10 flex items-start gap-3.5 backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+              <div className="w-9 h-9 rounded-xl bg-[#ff2a85]/10 border border-[#ff2a85]/30 flex items-center justify-center text-[#DB0C36] shrink-0 mt-0.5">
                 <Users className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider mb-1">
+                <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
                   ONE CREATIVE PARTNER
                 </h4>
-                <p className="text-xs text-zinc-400 leading-snug font-light">
+                <p className="text-xs text-zinc-500 leading-snug font-light">
                   Your dedicated ongoing design, motion and content department.
                 </p>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-start gap-3.5 backdrop-blur-sm">
-              <div className="w-9 h-9 rounded-xl bg-[#25F4EE]/10 border border-[#25F4EE]/30 flex items-center justify-center text-[#25F4EE] shrink-0 mt-0.5">
+            <div className="p-5 rounded-2xl bg-white/60 border border-black/10 flex items-start gap-3.5 backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+              <div className="w-9 h-9 rounded-xl bg-[#25F4EE]/15 border border-[#25F4EE]/40 flex items-center justify-center text-[#0e8c8c] shrink-0 mt-0.5">
                 <Globe className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider mb-1">
+                <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
                   FOUR PLATFORMS
                 </h4>
-                <p className="text-xs text-zinc-400 leading-snug font-light">
+                <p className="text-xs text-zinc-500 leading-snug font-light">
                   Facebook, Instagram, TikTok and WhatsApp, per package tier.
                 </p>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 flex items-start gap-3.5 backdrop-blur-sm">
-              <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-400 shrink-0 mt-0.5">
+            <div className="p-5 rounded-2xl bg-white/60 border border-black/10 flex items-start gap-3.5 backdrop-blur-sm shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+              <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-center text-orange-600 shrink-0 mt-0.5">
                 <Printer className="w-4 h-4" />
               </div>
               <div>
-                <h4 className="text-xs font-mono font-bold text-white uppercase tracking-wider mb-1">
+                <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
                   PRINTING EXCLUDED
                 </h4>
-                <p className="text-xs text-zinc-400 leading-snug font-light">
+                <p className="text-xs text-zinc-500 leading-snug font-light">
                   Digital creative services only unless separately quoted.
                 </p>
               </div>
