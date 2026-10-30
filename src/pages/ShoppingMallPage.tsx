@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Shader, Swirl, ChromaFlow, FlutedGlass, FilmGrain } from 'shaders/react';
 import AgenticFactory3D from '../components/AgenticFactory3D';
 import LineSidebar from '../components/LineSidebar';
+import { WHATSAPP_NUMBER } from '../data/config';
+import { useLanguage } from '../data/language';
 import {
   Tag, Film, Share2, Zap,
   ThumbsUp, MessageSquare, Heart, Bookmark, Send,
@@ -32,54 +34,78 @@ interface ShoppingMallPageProps {
 // section). Stock imagery + footage; not real client work.
 // =============================================================================
 
-const MALL_CAMPAIGNS = [
+const makeMallCampaigns = (t: (en: string, af: string) => string) => [
   {
     id: 'mall-1',
-    title: 'Weekend Food Market // Live Music in the Food Court',
+    title: t(
+      'Weekend Food Market // Live Music in the Food Court',
+      'Naweek Kosmark // Regstreekse Musiek in die Koswerf'
+    ),
     image:
       'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop',
     video:
       'https://assets.mixkit.co/videos/preview/mixkit-fresh-vegetables-falling-in-water-41551-large.mp4',
-    caption:
+    caption: t(
       'The Weekend Food Market is ON at Onawa Central! Forty stalls, live music from 6pm & the food court staying open late. Bring the whole crew. 🔥🛒',
-    hashtags: '#OnawaCentral #WeekendMarket #FoodCourt #LiveMusic #FamilyWeekend',
-    price: 'FRIDAY 4–9PM',
+      'Die Naweek Kosmark is AAN by Onawa Central! Veertig stalletjies, regstreekse musiek vanaf 6nm & die koswerf bly laat oop. Bring die hele gesin. 🔥🛒'
+    ),
+    hashtags: t(
+      '#OnawaCentral #WeekendMarket #FoodCourt #LiveMusic #FamilyWeekend',
+      '#OnawaCentral #NaweekMark #Koswerf #RegstreekseMusiek #GesinsNaweek'
+    ),
+    price: t('FRIDAY 4–9PM', 'VRYDAG 16:00–21:00'),
     likes: '2.1k',
     comments: '194',
     shares: '610',
-    timestamp: '3 hours ago',
+    timestamp: t('3 hours ago', '3 ure gelede'),
   },
   {
     id: 'mall-2',
-    title: 'New Store Opening // The Bakehouse is NOW OPEN',
+    title: t(
+      'New Store Opening // The Bakehouse is NOW OPEN',
+      'Nuwe Winkelopening // The Bakehouse is NOU OOP'
+    ),
     image:
       'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop',
     video:
       'https://assets.mixkit.co/videos/preview/mixkit-baker-taking-bread-out-of-the-oven-43142-large.mp4',
-    caption:
+    caption: t(
       'Good news, centre folk — The Bakehouse just opened its doors! First 200 visitors score a free pastry with any coffee. Welcome to the mall, neighbours. 🥐☕',
-    hashtags: '#NowOpen #NewStore #TheBakehouse #OnawaCentral #FreshBakery',
-    price: 'LEVEL 2 · NEAR CINEMA',
+      'Goeie nuus, sentrumvriende — The Bakehouse het die deure oopgemaak! Die eerste 200 besoekers kry ’n gebakkie verniet by enige koffie. Welkom by die sentrum, bure. 🥐☕'
+    ),
+    hashtags: t(
+      '#NowOpen #NewStore #TheBakehouse #OnawaCentral #FreshBakery',
+      '#NouOop #NuweWinkel #TheBakehouse #OnawaCentral #VarsBakkery'
+    ),
+    price: t('LEVEL 2 · NEAR CINEMA', 'VLAK 2 · LANGS DIE BIOSKOOP'),
     likes: '1.8k',
     comments: '151',
     shares: '420',
-    timestamp: 'Yesterday',
+    timestamp: t('Yesterday', 'Gister'),
   },
   {
     id: 'mall-3',
-    title: 'Restaurant Week // 20 Tables, 20 Set Menus',
+    title: t(
+      'Restaurant Week // 20 Tables, 20 Set Menus',
+      'Restourantweek // 20 Tafels, 20 Vaste Spyskaarte'
+    ),
     image:
       'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=1200&auto=format&fit=crop',
     video:
       'https://assets.mixkit.co/videos/preview/mixkit-chef-cutting-vegetables-on-a-wooden-board-43141-large.mp4',
-    caption:
+    caption: t(
       'Onawa Central Restaurant Week is here: 20 restaurants, 20 set-price specials, one delicious two-week run. Book early — tables are moving fast. 🍽️✨',
-    hashtags: '#RestaurantWeek #MallEats #TableForYou #OnawaCentral #FoodieFriday',
-    price: 'SET MENU N$150',
+      'Die Onawa Central Restourantweek is hier: 20 restaurante, 20 vasteprys-spesiale, een heerlike twee weke lange geleentheid. Bespreek vroegtydig — tafels gaan vinnig. 🍽️✨'
+    ),
+    hashtags: t(
+      '#RestaurantWeek #MallEats #TableForYou #OnawaCentral #FoodieFriday',
+      '#RestourantWeek #SentrumKos #TafelVirJou #OnawaCentral #KosvriendVrydag'
+    ),
+    price: t('SET MENU N$150', 'VASTE SPYSKAART N$150'),
     likes: '3.4k',
     comments: '287',
     shares: '1.1k',
-    timestamp: '2 days ago',
+    timestamp: t('2 days ago', '2 dae gelede'),
   },
 ];
 
@@ -116,60 +142,66 @@ interface MallPackage {
    Replace these two objects only if Onawa Studio revises the offer.
 ============================================================================= */
 
-const MALL_PACKAGES: MallPackage[] = [
+const makeMallPackages = (t: (en: string, af: string) => string): MallPackage[] => [
   {
     id: 'mall-buzz',
     name: 'Mall Buzz',
     price: 'N$1,500',
     rawPrice: '1,500',
-    personality: 'THE MALL FEED',
-    visualMessage: 'THE MALL FEED',
-    shortDesc: 'Keep your mall visible, promote your tenants, and give people reasons to visit.',
-    supportingText: 'Ideal for malls that want consistent promotions and a stronger social media presence.',
+    personality: t('THE MALL FEED', 'DIE SENTRUMVOER'),
+    visualMessage: t('THE MALL FEED', 'DIE SENTRUMVOER'),
+    shortDesc: t(
+      'Keep your mall visible, promote your tenants, and give people reasons to visit.',
+      'Hou jou sentrum sigbaar, promoveer jou huurders, en gee mense redes om te kom kuier.'
+    ),
+    supportingText: t(
+      'Ideal for malls that want consistent promotions and a stronger social media presence.',
+      'Ideaal vir sentrums wat deurlopende promosies en ’n sterker sosiale media-teenwoordigheid wil hê.'
+    ),
     accentColor: '#ccff00',
     badgeBg: 'bg-[#ccff00] text-black',
     cardBorderClass: '',
     trolleyTier: 'small',
     barcode: '0 15000 04150 6',
-    buttonLabel: 'START THE BUZZ',
+    buttonLabel: t('START THE BUZZ', 'BEGIN DIE GONS'),
     buttonAccentColor: 'text-[#ccff00] border-[#ccff00]/40',
     inclusions: [
       {
-        category: 'PROMOTIONAL GRAPHICS',
-        detail: '3 / week',
+        category: t('PROMOTIONAL GRAPHICS', 'PROMOSIEGRAFIKA'),
+        detail: '3 / ' + t('week', 'week'),
         isIncluded: true,
       },
       {
-        category: 'MOTION GRAPHICS & REELS',
-        detail: '4 / month',
+        category: t('MOTION GRAPHICS & REELS', 'MOTIONGRAFIKA & REELS'),
+        detail: '4 / ' + t('month', 'maand'),
         isIncluded: true,
       },
       {
-        category: 'TENANT PROMOS & STORE OPENINGS',
-        detail: 'Included',
+        category: t('TENANT PROMOS & STORE OPENINGS', 'HUURDERS-PROMOSIES & WINKELOPENINGS'),
+        detail: t('Included', 'Ingesluit'),
         isIncluded: true,
       },
       {
-        category: 'SEASONAL & SPECIAL-DAY PROMOS',
-        detail: 'Included',
-        subdetail: 'Picked to the mall calendar',
+        category: t('SEASONAL & SPECIAL-DAY PROMOS', 'SEISOEN- & SPESIALEDAG-PROMOSIES'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Picked to the mall calendar', 'Afgestem op die sentrumkalender'),
         isIncluded: true,
       },
       {
-        category: 'SOCIAL MEDIA SCHEDULING',
-        detail: 'INCLUDED FREE',
-        subdetail: 'Schedules & publishes created content',
+        category: t('SOCIAL MEDIA SCHEDULING', 'SOSIALE MEDIA-SKEDULERING'),
+        detail: t('INCLUDED FREE', 'INGESLUIT VERNIET'),
+        subdetail: t('Schedules & publishes created content', 'Skeduleer & publiseer geskepte inhoud'),
         isIncluded: true,
       },
       {
-        category: 'CHANNEL ADAPTATION',
+        category: t('CHANNEL ADAPTATION', 'KANAALAANPASSING'),
         detail: 'FB · IG · WHATSAPP',
-        subdetail: 'Content adapted per channel',
+        subdetail: t('Content adapted per channel', 'Inhoud aangepas per kanaal'),
         isIncluded: true,
       },
       {
-        category: 'MONTHLY CONTENT PLANNING',
-        detail: 'Included',
+        category: t('MONTHLY CONTENT PLANNING', 'MAANDELIKSE INHOUDSBEPLANNING'),
+        detail: t('Included', 'Ingesluit'),
         isIncluded: true,
       },
     ],
@@ -180,67 +212,76 @@ const MALL_PACKAGES: MallPackage[] = [
     name: 'Mall Buzz + Web',
     price: 'N$2,000',
     rawPrice: '2,000',
-    personality: 'THE BUZZ + WEB',
-    visualMessage: 'BUZZ + WEB',
-    shortDesc: 'Everything in Mall Buzz, plus a website that connects visitors with your mall and gives prospective tenants a place to register their interest.',
-    supportingText: 'Ideal for malls that want stronger marketing and a website that helps attract potential new tenants.',
+    personality: t('THE BUZZ + WEB', 'DIE GONS + WEB'),
+    visualMessage: t('BUZZ + WEB', 'GONS + WEB'),
+    shortDesc: t(
+      'Everything in Mall Buzz, plus a website that connects visitors with your mall and gives prospective tenants a place to register their interest.',
+      'Alles in Mall Buzz, plus ’n webwerf wat besoekers met jou sentrum verbind en voornemende huurders ’n plek gee om hul belangstelling aan te meld.'
+    ),
+    supportingText: t(
+      'Ideal for malls that want stronger marketing and a website that helps attract potential new tenants.',
+      'Ideaal vir sentrums wat sterker bemarking en ’n webwerf wil hê wat voornemende nuwe huurders lok.'
+    ),
     accentColor: '#ff2a85',
     badgeBg: 'bg-[#DB0C36] text-white',
     cardBorderClass: 'border-2 border-pink-500/30',
     trolleyTier: 'medium',
     barcode: '0 20000 04200 9',
-    buttonLabel: 'ADD THE WEBSITE',
+    buttonLabel: t('ADD THE WEBSITE', 'VOEG DIE WEBWERF BY'),
     buttonAccentColor: 'text-[#ff2a85] border-[#ff2a85]/40',
     inclusions: [
       {
-        category: 'EVERYTHING IN MALL BUZZ',
-        detail: 'ALL 7 SERVICES',
+        category: t('EVERYTHING IN MALL BUZZ', 'ALLES IN MALL BUZZ'),
+        detail: t('ALL 7 SERVICES', 'AL 7 DIENSTE'),
         isIncluded: true,
       },
       {
-        category: 'MALL WEBSITE',
-        detail: 'Included',
-        subdetail: 'Professionally designed & mobile-friendly',
+        category: t('MALL WEBSITE', 'SENTRUMWEBWERF'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Professionally designed & mobile-friendly', 'Professioneel ontwerp & mobielvriendelik'),
         isIncluded: true,
       },
       {
-        category: 'ONLINE STORE & TENANT DIRECTORY',
-        detail: 'Included',
+        category: t('ONLINE STORE & TENANT DIRECTORY', 'AANLYNWINKEL & HUURDERSGIDS'),
+        detail: t('Included', 'Ingesluit'),
         isIncluded: true,
       },
       {
-        category: 'HOURS, LOCATION & CONTACT',
-        detail: 'Included',
-        subdetail: 'Opening hours, map, phone & email',
+        category: t('HOURS, LOCATION & CONTACT', 'URE, LIGGING & KONTAK'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Opening hours, map, phone & email', 'Openingsure, kaart, telefoon & e-pos'),
         isIncluded: true,
       },
       {
-        category: 'EVENTS & ANNOUNCEMENT SECTION',
-        detail: 'Included',
-        subdetail: 'Events, promotions & mall notices',
+        category: t('EVENTS & ANNOUNCEMENT SECTION', 'GEBEURTENIS- & KENNISGEWINGSAFDELING'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Events, promotions & mall notices', 'Gebeurtenisse, promosies & sentrumkennisgewings'),
         isIncluded: true,
       },
       {
-        category: 'WHATSAPP & SOCIAL LINKS',
-        detail: 'Included',
+        category: t('WHATSAPP & SOCIAL LINKS', 'WHATSAPP- & SOSIALE SKAKELS'),
+        detail: t('Included', 'Ingesluit'),
         isIncluded: true,
       },
       {
-        category: 'NEW TENANT SIGN-UP',
-        detail: 'Included',
-        subdetail: 'Enquiries only — mall management reviews & contacts applicants',
+        category: t('NEW TENANT SIGN-UP', 'NUWE HUURDER-REGISTRASIE'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t(
+          'Enquiries only — mall management reviews & contacts applicants',
+          'Slegs navrae — sentrumbestuur beoordeel & kontak aansoekers'
+        ),
         isIncluded: true,
       },
       {
-        category: 'TENANT ENQUIRY FORM',
-        detail: 'Included',
-        subdetail: 'Collects contact details & space requirements',
+        category: t('TENANT ENQUIRY FORM', 'HUURDER-NAVRAEVORM'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Collects contact details & space requirements', 'Versamel kontakbesonderhede & ruimtebehoeftes'),
         isIncluded: true,
       },
       {
-        category: 'HOSTING & MAINTENANCE',
-        detail: 'Included',
-        subdetail: 'Hosting, content updates & basic upkeep',
+        category: t('HOSTING & MAINTENANCE', 'GASHEERDIENS & IN STAND HOUDING'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Hosting, content updates & basic upkeep', 'Gasheerdiens, inhoudsopdaterings & basiese instandhouding'),
         isIncluded: true,
       },
     ],
@@ -288,6 +329,7 @@ const ScannerLine: React.FC<{ className?: string; color?: string }> = ({ classNa
 );
 
 export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }) => {
+  const { lang, t } = useLanguage();
   const [activePlatform, setActivePlatform] = useState<'facebook' | 'instagram' | 'tiktok' | 'whatsapp'>('facebook');
   const [selectedAssetIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
@@ -295,8 +337,9 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   const heroRef = useRef<HTMLHeadingElement>(null);
 
-  // Width fit for the hero's middle line: measures "Your mall"'s width against
-  // "HAS MORE"'s natural width and writes the ratio into --title-fit.
+  // Width fit for the hero's middle line: measures "Jou sentrum"'s width against
+  // "HET MEER"'s natural width and writes the ratio into --title-fit.
+  // Depends on lang: the headline words swap with the language switch.
   useEffect(() => {
     const h1 = heroRef.current;
     if (!h1) return;
@@ -332,58 +375,78 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
       ro.disconnect();
       window.removeEventListener('resize', schedule);
     };
-  }, []);
+  }, [lang]);
 
-  const currentAsset = MALL_CAMPAIGNS[selectedAssetIndex];
+  const mallCampaigns = makeMallCampaigns(t);
+  const mallPackages = makeMallPackages(t);
+  const currentAsset = mallCampaigns[selectedAssetIndex];
 
   // Mall-specific WhatsApp enquiry: identifies the mall proposal. Same
   // wa.me convention (and same account) as the Retail Store page — no number
   // is hardcoded here either.
   const handleWhatsAppEnquiry = (pkgName: string, price: string) => {
-    const message = `Hi Onawa Studio! We're a shopping mall — I'm interested in the ${pkgName} package at N$${price} per month. Can we chat about getting started?`;
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    const message = t(
+      `Hi Onawa Studio! We're a shopping mall — I'm interested in the ${pkgName} package at N$${price} per month. Can we chat about getting started?`,
+      `Hallo Onawa Studio! Ons is ’n winkelsentrum — ek is belanggesteld in die ${pkgName}-pakkie teen N$${price} per maand. Kan ons gesels oor hoe om te begin?`
+    );
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const features = [
     {
       id: 1,
-      title: 'Tenant promo designs',
-      desc: 'Make every store look worth the trip. Almost impossible to scroll past — well, we can\u2019t control thumbs.',
+      title: t('Tenant promo designs', 'Huurder-promosie-ontwerpe'),
+      desc: t(
+        'Make every store look worth the trip. Almost impossible to scroll past — well, we can\u2019t control thumbs.',
+        'Maak elke winkel die reis werd. Amper onmoontlik om verby te swiep — wel, ons kan nie duime beheer nie.'
+      ),
       icon: <Tag className="w-5 h-5 text-[#ccff00]" />,
-      tag: '01 // TENANTS',
+      tag: t('01 // TENANTS', '01 // HUURDERS'),
       bgImage: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 2,
-      title: 'Mall-wide campaigns',
-      desc: 'Seasonal takeovers, festive magic, back-to-school buzz. Planned, designed, delivered.',
+      title: t('Mall-wide campaigns', 'Sentrumwye veldtogte'),
+      desc: t(
+        'Seasonal takeovers, festive magic, back-to-school buzz. Planned, designed, delivered.',
+        'Seisoen-oorneemings, feesmagie, terug-na-skool-gons. Beplan, ontwerp, afgelewer.'
+      ),
       icon: <Share2 className="w-5 h-5 text-[#ccff00]" />,
-      tag: '02 // CAMPAIGNS',
+      tag: t('02 // CAMPAIGNS', '02 // VELDTOGTE'),
       bgImage: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 3,
-      title: 'Events & new openings',
-      desc: 'Opening countdowns, activations and event promos that pull people through the doors.',
+      title: t('Events & new openings', 'Gebeurtenisse & nuwe openings'),
+      desc: t(
+        'Opening countdowns, activations and event promos that pull people through the doors.',
+        'Openingsaftellings, aktiverings en geleentheidpromosies wat mense deur die deure trek.'
+      ),
       icon: <Calendar className="w-5 h-5 text-[#ccff00]" />,
-      tag: '03 // EVENT DEPT',
+      tag: t('03 // EVENT DEPT', '03 // GEBEURTENISDEPT'),
       bgImage: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 4,
-      title: 'Motion graphics',
-      desc: 'Because sometimes a big weekend deserves more than standing still.',
+      title: t('Motion graphics', 'Motion-grafika'),
+      desc: t(
+        'Because sometimes a big weekend deserves more than standing still.',
+        'Want soms verdien ’n groot naweek meer as om stil te staan.'
+      ),
       icon: <Film className="w-5 h-5 text-[#ccff00]" />,
-      tag: '04 // MOTION LAB',
+      tag: t('04 // MOTION LAB', '04 // MOTION-LAB'),
       bgImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 5,
-      title: 'Social content & publishing',
-      desc: "We create, caption, schedule and publish. Your centre's pages don't have to look like the doors are shut.",
+      title: t('Social content & publishing', 'Sosiale inhoud & publisering'),
+      desc: t(
+        "We create, caption, schedule and publish. Your centre's pages don't have to look like the doors are shut.",
+        'Ons skep, skryf opskrifte, skeduleer en publiseer. Jou sentrum se bladsye hoef nie te lyk of die deure is toe nie.'
+      ),
       icon: <Globe className="w-5 h-5 text-[#ccff00]" />,
-      tag: '05 // MULTI-FEED',
+      tag: t('05 // MULTI-FEED', '05 // MULTI-FEED'),
       bgImage: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?q=80&w=1600&auto=format&fit=crop',
     },
   ];
@@ -529,7 +592,15 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
         <div className="bg-white/60 backdrop-blur-xl border border-black/10 p-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
           <div className="text-[10px] font-mono text-[#4d7c0f] uppercase tracking-widest mb-3 text-center">ONAWA STUDIO</div>
           <LineSidebar
-            items={['Mall Reality', 'Tenant Promos', 'Mall Campaigns', 'Events & Openings', 'Motion Labs', 'Social Feed', 'Centre Pricing']}
+            items={[
+              t('Mall Reality', 'Sentrumrealiteit'),
+              t('Tenant Promos', 'Huurder-promosies'),
+              t('Mall Campaigns', 'Sentrumveldtogte'),
+              t('Events & Openings', 'Gebeurtenisse & Openings'),
+              t('Motion Labs', 'Motion-Laboratoriums'),
+              t('Social Feed', 'Sosiale Voer'),
+              t('Centre Pricing', 'Sentrumpryse'),
+            ]}
             accentColor="#DB0C36"
             textColor="#52525b"
             markerColor="#a1a1aa"
@@ -568,12 +639,12 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="max-w-xl lg:max-w-2xl pointer-events-auto flex-1 flex flex-col justify-center translate-y-6 lg:translate-y-10">
               <h1 ref={heroRef} className="hero-title text-[#1c1c1e] mb-8 sm:mb-10">
                 <span className="block hero-line1">
-                  <span className="color-salmon font-outfit whitespace-nowrap"><span className="font-glamour-initial">Y</span>our mall</span>
+                  <span className="color-salmon font-outfit whitespace-nowrap"><span className="font-glamour-initial">{t('Y', 'J')}</span>{t('our mall', 'ou sentrum')}</span>
                 </span>
-                <span className="block font-griffits color-heading uppercase title-fit-width">HAS MORE</span>
+                <span className="block font-griffits color-heading uppercase title-fit-width">{t('HAS MORE', 'HET MEER')}</span>
                 <span className="block hero-crossover">
-                  <span className="color-heading font-outfit hero-smaller">to</span>{' '}
-                  <span className="color-salmon font-griffits"><span className="font-glamour-initial glamour-tight">S</span>how.</span>
+                  <span className="color-heading font-outfit hero-smaller">{t('to', 'om')}</span>{' '}
+                  <span className="color-salmon font-griffits"><span className="font-glamour-initial glamour-tight">{t('S', 't')}</span>{t('how.', 'e wys.')}</span>
                 </span>
               </h1>
             </div>
@@ -582,10 +653,10 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="max-w-lg pointer-events-auto mt-auto">
               <LineSidebar
                   items={[
-                    'Tenant Promo Designs',
-                    'Mall-wide Campaigns',
-                    'Events & New Openings',
-                    'Omnichannel Social Media'
+                    t('Tenant Promo Designs', 'Huurder-promosie-ontwerpe'),
+                    t('Mall-wide Campaigns', 'Sentrumwye Veldtogte'),
+                    t('Events & New Openings', 'Gebeurtenisse & Nuwe Openings'),
+                    t('Omnichannel Social Media', 'Omnichannel Sosiale Media')
                   ]}
                   accentColor="#DB0C36"
                   textColor="#3f3f46"
@@ -635,7 +706,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                 <div className="absolute bottom-4 left-4 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-[#ccff00] font-mono text-xs font-bold flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-pulse" />
-                  <span>LIVE FOOTAGE // WEEKEND FOOD MARKET</span>
+                  <span>LIVE FOOTAGE // {t('WEEKEND FOOD MARKET', 'NAWEEK KOSMARK')}</span>
                 </div>
               </div>
             </div>
@@ -644,20 +715,20 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="lg:col-span-6 flex flex-col">
               <div className="mb-6 self-end inline-flex items-center gap-2.5 rounded-full bg-black/[0.04] px-3.5 py-1.5 ring-1 ring-black/10 backdrop-blur-md">
                 <span className="inline-flex items-center text-xs font-semibold text-neutral-950 bg-[#ff2a85] rounded-full py-0.5 px-2 font-mono">
-                  REALITY
+                  {t('REALITY', 'WERKELIKHEID')}
                 </span>
                 <span className="text-xs font-mono font-medium text-zinc-700 uppercase tracking-widest">
-                  The Mall Reality
+                  {t('The Mall Reality', 'Die Sentrumrealiteit')}
                 </span>
               </div>
 
               <h2 className="type-title text-[#1c1c1e] mb-6">
                 <span className="block">
-                  <span className="fancy-initial">F</span><span className="font-outfit font-medium">oot traffic doesn't</span>
+                  <span className="fancy-initial">{t('F', 'V')}</span><span className="font-outfit font-medium">{t("oot traffic doesn't", 'oetverkeer kom')}</span>
                 </span>
                 <span className="block -mt-1.5 text-[#DB0C36]">
-                  <span className="font-griffits">Appear</span>{' '}
-                  <span className="font-outfit font-medium">automatically.</span>
+                  <span className="font-griffits">{t('Appear', 'nie')}</span>{' '}
+                  <span className="font-outfit font-medium">{t('automatically.', 'vanself.')}</span>
                 </span>
               </h2>
 
@@ -665,13 +736,13 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
 
               <div className="type-lead space-y-6 text-zinc-600 font-light leading-relaxed max-w-xl">
                 <p className="text-[#1c1c1e] font-normal">
-                  Tenant specials. New store openings. Weekend events. School holiday madness. Another campaign due yesterday.
+                  {t('Tenant specials. New store openings. Weekend events. School holiday madness. Another campaign due yesterday.', 'Huurder-spesiale. Nuwe winkelopenings. Naweek-gebeurtenisse. Skoolvakansie-waan. Nog ’n veldtog wat gister moes klaar wees.')}
                 </p>
                 <p className="text-zinc-500">
-                  Your mall is a town under one roof. Tenants count on you to keep the traffic flowing — but the designs, the opening countdowns, the event promos and a feed that never sleeps? That's a whole other centre to run.
+                  {t('Your mall is a town under one roof. Tenants count on you to keep the traffic flowing — but the designs, the opening countdowns, the event promos and a feed that never sleeps? That’s a whole other centre to run.', 'Jou sentrum is ’n dorp onder een dak. Huurders staar op jou om die verkeer laat vloei — maar die ontwerpe, die openingsaftellings, die geleentheidpromosies en ’n voer wat nooit rus nie? Dis ’n hele ander sentrum om te bestuur.')}
                 </p>
                 <p className="text-[#1c1c1e] font-medium text-lg sm:text-xl pt-4 border-t border-black/10">
-                  Good thing you don't have to do it all yourself.
+                  {t('Good thing you don\'t have to do it all yourself.', 'Gelukkig hoef jy nie alles self te doen nie.')}
                 </p>
               </div>
             </div>
@@ -706,23 +777,24 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/30 mb-6">
               <Zap className="w-3.5 h-3.5 text-[#ccff00] animate-pulse" />
               <span className="text-xs font-mono tracking-widest text-[#ccff00] uppercase font-semibold">
-                Autonomous Creative Department
+                {t('Autonomous Creative Department', 'Outonome Kreatiewe Departement')}
               </span>
             </div>
 
             <h2 className="type-title text-white mb-6">
               <span className="block">
-                <span className="font-glamour-initial">Y</span><span className="font-outfit font-medium">ou provide the </span><span className="font-griffits uppercase">Space.</span>
+                <span className="font-glamour-initial">{t('Y', 'J')}</span><span className="font-outfit font-medium">{t('ou provide the ', 'y stel die ')}</span><span className="font-griffits uppercase">{t('Space.', 'Ruimte.')}</span>
               </span>
               <span className="block -mt-1.5 text-[#ccff00] drop-shadow-[0_0_25px_rgba(204,255,0,0.4)]">
-                <span className="font-outfit font-medium">we make it </span><span className="font-griffits uppercase">the place.</span>
+                <span className="font-outfit font-medium">{t('we make it ', 'ons maak dit ')}</span><span className="font-griffits uppercase">{t('the place.', 'die plek.')}</span>
               </span>
             </h2>
 
             <ScannerLine className="mb-8" color="#ccff00" />
 
             <p className="type-lead-oneline text-zinc-300 font-light">
-              Think of Onawa as your centre's creative department — covering tenants, campaigns and the mall itself.
+              {t('Think of Onawa as your centre\'s creative department — covering tenants, campaigns and the mall itself.', 'Kyk na Onawa as jou sentrum se kreatiewe departement — huurders, veldtogte en die sentrum self.')
+              }
             </p>
           </div>
 
@@ -786,8 +858,8 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                 </p>
 
                 <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs font-mono text-zinc-400">
-                  <span>ONAWA CREATIVE DEPT</span>
-                  <span className="text-[#ccff00]">ACTIVE SELECTION</span>
+                  <span>{t('ONAWA CREATIVE DEPT', 'ONAWA KREATIEWE DEPT')}</span>
+                  <span className="text-[#ccff00]">{t('ACTIVE SELECTION', 'AKTIEWE KEUSE')}</span>
                 </div>
               </div>
             </div>
@@ -805,22 +877,22 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] border border-black/10 mb-6 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_8px_#ff2a85] animate-pulse" />
               <span className="text-xs font-mono tracking-widest text-[#DB0C36] uppercase font-semibold">
-                THE PROOF
+                {t('THE PROOF', 'DIE BEWYS')}
               </span>
             </div>
 
             <h2 className="type-title text-[#1c1c1e] mb-6">
               <span className="block">
-                <span className="font-glamour-initial">O</span><span className="font-outfit font-medium">ne destination. </span>
+                <span className="font-glamour-initial">{t('O', 'E')}</span><span className="font-outfit font-medium">{t('ne destination. ', 'en bestemming. ')}</span>
               </span>
-              <span className="block -mt-1.5 text-[#DB0C36] font-griffits uppercase">“ENDLESS STORIES.”</span>
+              <span className="block -mt-1.5 text-[#DB0C36] font-griffits uppercase">{t('“ENDLESS STORIES.”', '“ONUITPUTLIKE STORIESE.”')}</span>
             </h2>
 
             <ScannerLine className="mx-auto mb-8" />
 
             <p className="type-lead text-zinc-600 font-light max-w-2xl mx-auto">
-              “A mall is full of good stories.<br />
-              See how good they could look on your socials.”
+              {t('“A mall is full of good stories.', '“’N Sentrum spruis van goeie stories.')}<br />
+              {t('See how good they could look on your socials.”', 'Kyk hoe goed hulle op jou sosiale media sou lyk.”')}
             </p>
           </div>
 
@@ -937,10 +1009,10 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 text-[#ccff00] font-mono text-xs font-bold">
-                      THIS WEEKEND: {currentAsset.price}
+                      {t('THIS WEEKEND:', 'HIERDIE NAWEEK:')} {currentAsset.price}
                     </div>
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="px-4 py-2 rounded-full bg-white/90 text-black text-xs font-bold font-mono shadow-lg">Click to View Full Artwork</span>
+                      <span className="px-4 py-2 rounded-full bg-white/90 text-black text-xs font-bold font-mono shadow-lg">{t('Click to View Full Artwork', 'Klik om die Volle Kunswerk te Sien')}</span>
                     </div>
                   </div>
 
@@ -950,7 +1022,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                       <span>{currentAsset.likes}</span>
                     </div>
                     <div>
-                      <span>{currentAsset.comments} comments • {currentAsset.shares} shares</span>
+                      <span>{currentAsset.comments} {t('comments', 'kommentare')} • {currentAsset.shares} {t('shares', 'deelinge')}</span>
                     </div>
                   </div>
 
@@ -961,15 +1033,15 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                       className={`flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer ${isLiked ? 'text-[#1877F2]' : ''}`}
                     >
                       <ThumbsUp className="w-4 h-4" />
-                      <span>Like</span>
+                      <span>{t('Like', 'Soos')}</span>
                     </button>
                     <button type="button" className="flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
                       <MessageSquare className="w-4 h-4" />
-                      <span>Comment</span>
+                      <span>{t('Comment', 'Kommentaar')}</span>
                     </button>
                     <button type="button" className="flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
                       <Share2 className="w-4 h-4" />
-                      <span>Share</span>
+                      <span>{t('Share', 'Deel')}</span>
                     </button>
                   </div>
                 </div>
@@ -990,22 +1062,22 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-bold text-base sm:text-lg">onawacentral</h3>
                         <button type="button" className="px-4 py-1.5 rounded-lg bg-zinc-800 text-xs font-semibold hover:bg-zinc-700 transition-colors">
-                          Following
+                          {t('Following', 'Volg')}
                         </button>
                       </div>
                       <div className="flex items-center gap-6 text-xs sm:text-sm text-zinc-300">
-                        <span><strong>286</strong> posts</span>
-                        <span><strong>68K</strong> followers</span>
-                        <span><strong>310</strong> following</span>
+                        <span><strong>286</strong> {t('posts', 'plasings')}</span>
+                        <span><strong>68K</strong> {t('followers', 'volgelinge')}</span>
+                        <span><strong>310</strong> {t('following', 'volg')}</span>
                       </div>
                     </div>
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm">Onawa Central Mall</h4>
                     <p className="text-xs text-zinc-400 mt-1">
-                      🛍 The shops, food & fun your weekends deserve.<br />
-                      🎬 Weekend markets, movie nights & mall moments.<br />
-                      📍 Find us on the map below 👇
+                      🛍 {t('The shops, food & fun your weekends deserve.', 'Die winkels, kos & pret wat jou naweke verdien.')}<br />
+                      🎬 {t('Weekend markets, movie nights & mall moments.', 'Naweek-merke, fliek-aande & sentrum-oomblikke.')}<br />
+                      📍 {t('Find us on the map below 👇', 'Vind ons op die kaart hieronder 👇')}
                     </p>
                     <a href="#mall" onClick={(e) => e.preventDefault()} className="text-xs text-[#ccff00] font-mono mt-1 block">
                       linktr.ee/onawacentral
@@ -1040,7 +1112,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                       </div>
                       <Bookmark className="w-6 h-6 hover:text-zinc-300 transition-colors cursor-pointer" />
                     </div>
-                    <div className="text-xs font-semibold">{currentAsset.likes} likes</div>
+                    <div className="text-xs font-semibold">{currentAsset.likes} {t('likes', 'hou van dit')}</div>
                     <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
                       <strong className="text-white mr-2">onawacentral</strong>
                       {currentAsset.caption} <span className="text-[#3897f0]">{currentAsset.hashtags}</span>
@@ -1068,7 +1140,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
 
                 <div className="relative z-10 p-4 flex items-center justify-between text-white">
                   <div className="text-xs font-mono font-bold bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
-                    Following | <span className="text-[#25F4EE]">For You</span>
+                    {t('Following', 'Volg')}{' | '}<span className="text-[#25F4EE]">{t('For You', 'Vir Jou')}</span>
                   </div>
                   <Volume2 className="w-5 h-5 text-white/80" />
                 </div>
@@ -1121,7 +1193,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
 
                   <div className="flex items-center gap-2 text-xs font-mono bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg w-fit">
                     <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-ping" />
-                    <span className="truncate max-w-[200px]">Original Sound - Onawa Central</span>
+                    <span className="truncate max-w-[200px]">{t('Original Sound - Onawa Central', 'Oorspronklike Klank - Onawa Central')}</span>
                   </div>
                 </div>
               </div>
@@ -1139,7 +1211,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                       <h4 className="font-bold text-sm flex items-center gap-1">
                         Onawa Central Mall <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366] fill-black" />
                       </h4>
-                      <p className="text-[11px] text-[#25D366]">Online • Business Account</p>
+                      <p className="text-[11px] text-[#25D366]">{t('Online • Business Account', 'Aanlyn • Besigheidsrekening')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-zinc-300">
@@ -1153,22 +1225,22 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                     <div className="relative aspect-[4/3] bg-black">
                       <img src={currentAsset.image} alt="Status" className="w-full h-full object-cover" />
                       <div className="absolute top-3 left-3 px-3 py-1 rounded bg-[#25D366] text-black font-mono text-[11px] font-bold">
-                        WHATSAPP STATUS UPDATE
+                        {t('WHATSAPP STATUS UPDATE', 'WHATSAPP STATUS-WERKENDING')}
                       </div>
                     </div>
                     <div className="p-3 text-xs text-zinc-300 font-mono">
-                      🛍 {currentAsset.title} — Tap for what's on this weekend.
+                      🛍 {currentAsset.title} — {t("Tap for what's on this weekend.", 'Tik vir wat hierdie naweek aangaan.')}
                     </div>
                   </div>
 
                   <div className="bg-[#005c4b] text-white p-3.5 rounded-2xl rounded-tr-none max-w-md ml-auto shadow-md space-y-2">
                     <p className="text-xs sm:text-sm leading-relaxed">
-                      🔔 <strong>ONAWA CENTRAL BULLETIN:</strong><br />
+                      🔔 <strong>{t('ONAWA CENTRAL BULLETIN:', 'ONAWA CENTRAL-NUUSBRIEF:')}</strong><br />
                       {currentAsset.caption}
                     </p>
                     <div className="p-2 rounded-lg bg-black/20 font-mono text-xs text-[#25D366] flex items-center justify-between">
-                      <span>This weekend: {currentAsset.price}</span>
-                      <span>Runs all weekend</span>
+                      <span>{t('This weekend:', 'Hierdie naweek:')} {currentAsset.price}</span>
+                      <span>{t('Runs all weekend', 'Loop al die naweek')}</span>
                     </div>
                     <div className="text-[10px] text-zinc-300 text-right">09:42 AM ✓✓</div>
                   </div>
@@ -1176,7 +1248,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
 
                 <div className="p-3 bg-[#1f2c34] flex items-center gap-3">
                   <div className="flex-1 bg-[#2a3942] px-4 py-2.5 rounded-full text-xs text-zinc-400">
-                    Reply to Onawa Central Mall...
+                    {t('Reply to Onawa Central Mall...', 'Antwoord op Onawa Central Mall...')}
                   </div>
                   <div className="w-10 h-10 rounded-full bg-[#00a884] flex items-center justify-center text-black font-bold">
                     <Send className="w-4 h-4 text-black" />
@@ -1193,14 +1265,14 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
               <div className="relative max-w-4xl w-full bg-zinc-900 rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
                 <div className="p-4 bg-zinc-950 flex items-center justify-between border-b border-zinc-800">
                   <span className="font-mono text-xs text-[#ccff00] uppercase tracking-wider">
-                    DEMO CAMPAIGN ASSET // {currentAsset.title}
+                    {t('DEMO CAMPAIGN ASSET //', 'DEMO-VELDTOGBATE //')} {currentAsset.title}
                   </span>
                   <button
                     type="button"
                     onClick={() => setIsExpandedImage(false)}
                     className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-xs text-white font-mono cursor-pointer"
                   >
-                    CLOSE [X]
+                    {t('CLOSE [X]', 'MAAK TOE [X]')}
                   </button>
                 </div>
                 <div className="p-6 flex items-center justify-center bg-black">
@@ -1215,7 +1287,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
 
           {/* Demo-content disclosure */}
           <p className="text-center font-mono text-[10px] tracking-widest text-zinc-500 uppercase mt-8">
-            Demo content — fictional mall “Onawa Central”. Sample campaigns by Onawa Studio, not client work.
+            {t('Demo content — fictional mall “Onawa Central”. Sample campaigns by Onawa Studio, not client work.', 'Demoinhoud — fiktiewe sentrum “Onawa Central”. Proefveldtogte deur Onawa Studio, nie kliëntewerk nie.')}
           </p>
 
         </div>
@@ -1236,23 +1308,23 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] border border-black/10 mb-6 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_8px_#ccff00] animate-pulse" />
               <span className="text-xs font-mono tracking-widest text-[#4d7c0f] uppercase font-semibold">
-                YOUR CENTRE'S MONTHLY CREATIVE MENU
+                {t("YOUR CENTRE'S MONTHLY CREATIVE MENU", 'JOU SENTRUM SE MAANDELIKSE KREATIEWE SPYSKAART')}
               </span>
             </div>
 
             <h2 className="type-section text-[#1c1c1e] mb-6">
               <span className="block">
-                <span className="fancy-initial">G</span><span className="font-outfit font-medium">ood creative, </span><span className="font-griffits uppercase">all floors.</span>
+                <span className="fancy-initial">{t('G', 'G')}</span><span className="font-outfit font-medium">{t('ood creative, ', 'oeie kreatiwiteit, ')}</span><span className="font-griffits uppercase">{t('all floors.', 'alle vlakke.')}</span>
               </span>
-              <span className="block mt-0.5 font-outfit font-medium text-[#4d7c0f]">tenant promos. mall moments.</span>
+              <span className="block mt-0.5 font-outfit font-medium text-[#4d7c0f]">{t('tenant promos. mall moments.', 'huurder-promosies. sentrum-oomblikke.')}</span>
             </h2>
 
             <p className="type-lead text-zinc-600 font-light max-w-2xl mx-auto mb-3">
-              “Pick your package, and let's get your centre looking like the main event.”
+              {t('“Pick your package, and let\'s get your centre looking like the main event.”', '“Kies jou pakkie, en laat ons jou sentrum laat lyk soos die hoofgebeurtenis.”')}
             </p>
 
             <p className="type-ui font-mono text-zinc-500 uppercase tracking-wider">
-              Two packages. One creative partner. No long-term contract.
+              {t('Two packages. One creative partner. No long-term contract.', 'Twee pakkette. Een kreatiewe vennoot. Geen langtermynkontrak nie.')}
             </p>
 
             {/* Subtle Checkout Scanner Laser Line Visual Graphic */}
@@ -1261,7 +1333,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
 
           {/* ==================== 2 TILL SLIP OFFER CARDS SIDE BY SIDE ==================== */}
           <main className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-6 items-start pt-6 max-w-4xl mx-auto mb-20">
-            {MALL_PACKAGES.map((pkg, idx) => (
+            {mallPackages.map((pkg, idx) => (
               <div
                 key={pkg.id}
                 className={`receipt-paper receipt-fold text-thermal-ink font-mono p-5 sm:p-6 relative select-none rounded-sm ${pkg.cardBorderClass}`}
@@ -1285,10 +1357,10 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                     ONAWA STUDIO TILL
                   </div>
                   <div className="text-[10px] text-zinc-600 tracking-wider">
-                    MALL #0400 // CENTRE OFFICE // TAX INVOICE
+                    {t('MALL #0400 // CENTRE OFFICE // TAX INVOICE', 'SENTRUM #0400 // SENTRUMKANTOOR // BELASTINGFAKTUUR')}
                   </div>
                   <div className="text-[10px] text-zinc-500">
-                    AUTONOMOUS CREATIVE PIPELINE
+                    {t('AUTONOMOUS CREATIVE PIPELINE', 'OUTONOME KREATIEWE PYPLYN')}
                   </div>
 
                   {/* Visual Message Pill */}
@@ -1337,8 +1409,8 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                 {/* Itemised Services with Perforated Lines */}
                 <div className="space-y-3 font-mono text-xs mb-5">
                   <div className="flex items-center justify-between text-[10px] text-zinc-500 font-semibold border-b border-zinc-300 pb-1 uppercase tracking-wider">
-                    <span>SCAN ITEM</span>
-                    <span>ALLOWANCE</span>
+                    <span>{t('SCAN ITEM', 'SKAN ITEM')}</span>
+                    <span>{t('ALLOWANCE', 'TOELAE')}</span>
                   </div>
 
                   {pkg.inclusions.map((item, i) => (
@@ -1365,17 +1437,17 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                 {/* Totals — confirmed pricing, same receipt format as the retail page */}
                 <div className="pt-1 mb-5 font-mono space-y-1.5">
                   <div className="flex justify-between text-xs text-zinc-600">
-                    <span>REGULAR SUBTOTAL:</span>
+                    <span>{t('REGULAR SUBTOTAL:', 'GEREELDE SUBTOTAAL:')}</span>
                     <span>N${pkg.rawPrice}.00</span>
                   </div>
                   <div className="flex justify-between text-xs text-zinc-600">
-                    <span>LONG-TERM CONTRACT:</span>
-                    <span className="text-emerald-700 font-bold">N$0.00 (NONE)</span>
+                    <span>{t('LONG-TERM CONTRACT:', 'LANGTERMYNKONTRAK:')}</span>
+                    <span className="text-emerald-700 font-bold">{t('N$0.00 (NONE)', 'N$0.00 (GEEN)')}</span>
                   </div>
                   <div className="flex items-baseline justify-between pt-2 border-t border-zinc-300 text-zinc-950">
-                    <span className="font-black text-sm tracking-wider uppercase">MONTHLY TOTAL:</span>
+                    <span className="font-black text-sm tracking-wider uppercase">{t('MONTHLY TOTAL:', 'MAANDELIKSE TOTAAL:')}</span>
                     <span className="font-black text-2xl sm:text-3xl tracking-tight">
-                      {pkg.price}<span className="text-xs font-normal text-zinc-600">/MO</span>
+                      {pkg.price}<span className="text-xs font-normal text-zinc-600">/{t('MO', 'MA')}</span>
                     </span>
                   </div>
                   <p className="text-[10px] text-zinc-500 italic pt-1">
@@ -1397,7 +1469,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                 <BarcodeGraphic code={pkg.barcode} />
 
                 <div className="text-center font-mono text-[9px] text-zinc-500 mt-2 mb-2">
-                  THANK YOU FOR VISITING ONAWA CENTRAL
+                  {t('THANK YOU FOR VISITING ONAWA CENTRAL', 'DANKIE DAT JY ONAWA CENTRAL SOEKEN')}
                 </div>
 
                 {/* Sawtooth Bottom Edge */}
@@ -1413,28 +1485,28 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="p-6 sm:p-8 rounded-3xl bg-white/60 border border-black/10 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
               <div className="flex items-center gap-2.5 mb-4 font-mono text-xs font-semibold text-[#4d7c0f] uppercase tracking-wider">
                 <Info className="w-4 h-4" />
-                <span>TERMS OF ENGAGEMENT & WORKING PROCESS</span>
+                <span>{t('TERMS OF ENGAGEMENT & WORKING PROCESS', 'VOORWAARDES VAN VERSKANSING & WERKSPROSES')}</span>
               </div>
               <ul className="space-y-2.5 text-xs sm:text-sm font-mono text-zinc-600 leading-relaxed">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Requests are handled one at a time to ensure maximum focus and creative quality.</span>
+                  <span>{t('Requests are handled one at a time to ensure maximum focus and creative quality.', 'Versoeke word een vir een hanteer om maksimum fokus en kreatiewe gehalte te verseker.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Please allow at least one day before your intended release date for standard turnaround.</span>
+                  <span>{t('Please allow at least one day before your intended release date for standard turnaround.', 'Laat asseblief ten minste een dag voor jou beoogde vrystellingsdatum vir standaard deurlooptyd.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Rush requests depend on studio availability and may incur an additional expediting fee.</span>
+                  <span>{t('Rush requests depend on studio availability and may incur an additional expediting fee.', 'Haastige versoeke hang af van die ateljee se beskikbaarheid en kan ’n bykomende versneltarief insluit.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Printing costs are not included. All deliverables are provided as production-ready digital and high-resolution print files.</span>
+                  <span>{t('Printing costs are not included. All deliverables are provided as production-ready digital and high-resolution print files.', 'Drukkoste is nie ingesluit nie. Alle aflewerings word verskaf as produksiegereed digitale en hoë-resolusie druklêers.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Social media management covers scheduling and publishing the created designs; paid advertising budgets, customer service and community management are not included.</span>
+                  <span>{t('Social media management covers scheduling and publishing the created designs; paid advertising budgets, customer service and community management are not included.', 'Sosiale media-bestuur dek skedulering en publisering van die geskepte ontwerpe; betaalde advertensiebegrotings, kliëntediens en gemeenskapsbestuur is nie ingesluit nie.')}</span>
                 </li>
               </ul>
             </div>
@@ -1448,10 +1520,10 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  MONTH-TO-MONTH
+                  {t('MONTH-TO-MONTH', 'MAAND-TOT-MAAND')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  No long-term contract. Cancel or pause whenever your centre needs.
+                  {t('No long-term contract. Cancel or pause whenever your centre needs.', 'Geen langtermynkontrak nie. Kanselleer of pouseer wanneer jou sentrum dit nodig het.')}
                 </p>
               </div>
             </div>
@@ -1462,10 +1534,10 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  ONE CREATIVE PARTNER
+                  {t('ONE CREATIVE PARTNER', 'EEN KREATIEWE VENNOOT')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  Your dedicated ongoing design, motion and content department.
+                  {t('Your dedicated ongoing design, motion and content department.', 'Jou toegewyde deurlopende ontwerp-, motion- en inhoudsdepartement.')}
                 </p>
               </div>
             </div>
@@ -1476,10 +1548,10 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  MULTI-CHANNEL
+                  {t('MULTI-CHANNEL', 'MULTI-KANAAL')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  Facebook, Instagram and WhatsApp — content adapted per package.
+                  {t('Facebook, Instagram and WhatsApp — content adapted per package.', 'Facebook, Instagram en WhatsApp — inhoud aangepas per pakkie.')}
                 </p>
               </div>
             </div>
@@ -1490,10 +1562,10 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  TENANTS INCLUDED
+                  {t('TENANTS INCLUDED', 'HUURDERS INGESLUIT')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  One centre, every tenant promotion — per package tier.
+                  {t('One centre, every tenant promotion — per package tier.', 'Een sentrum, elke huurder-promosie — per pakkie-vlak.')}
                 </p>
               </div>
             </div>

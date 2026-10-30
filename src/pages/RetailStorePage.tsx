@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Shader, Swirl, ChromaFlow, FlutedGlass, FilmGrain } from 'shaders/react';
 import AgenticFactory3D from '../components/AgenticFactory3D';
 import LineSidebar from '../components/LineSidebar';
+import { WHATSAPP_NUMBER } from '../data/config';
+import { useLanguage } from '../data/language';
 import {
   Tag, FileText, Film, Share2, Zap,
   ThumbsUp, MessageSquare, Heart, Bookmark, Send, Play, 
@@ -14,45 +16,73 @@ interface RetailStorePageProps {
   onNavigate: (page: 'home' | 'retail-store') => void;
 }
 
-const CAMPAIGN_ASSETS = [
+// Demo campaign content (factory so every string is translated via t()).
+const makeCampaignAssets = (t: (en: string, af: string) => string) => [
   {
     id: 'campaign-1',
-    title: 'Weekend Fresh Produce // 50% Off Organic Greens',
+    title: t(
+      'Weekend Fresh Produce // 50% Off Organic Greens',
+      'Naweek Vars Produkte // 50% Af Op Organiese Groente'
+    ),
     image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?q=80&w=1200&auto=format&fit=crop',
     video: 'https://assets.mixkit.co/videos/preview/mixkit-fresh-vegetables-falling-in-water-41551-large.mp4',
-    caption: 'Fresh produce just landed at Onawa Fresh! Crisp organic greens, hand-picked berries & weekend savings you can taste. Stock up before Sunday! 🛒✨',
-    hashtags: '#FreshProduce #WeekendSpecials #OnawaFresh #GroceryDeals #FarmToTable',
-    price: '$2.99 /kg',
+    caption: t(
+      'Fresh produce just landed at Onawa Fresh! Crisp organic greens, hand-picked berries & weekend savings you can taste. Stock up before Sunday! 🛒✨',
+      'Vars produke het by Onawa Fresh aangekom! Knapperige organiese groente, handgeplukte bessies & naweek-voordele wat jy kan proe. Laai op voor Sondag! 🛒✨'
+    ),
+    hashtags: t(
+      '#FreshProduce #WeekendSpecials #OnawaFresh #GroceryDeals #FarmToTable',
+      '#VarsProdukte #NaweekSpesiale #OnawaFresh #WinkelVoordele #BoerTotTafel'
+    ),
+    price: t('$2.99 /kg', '$2.99/kg'),
     likes: '1.4k',
     comments: '128',
     shares: '482',
-    timestamp: '2 hours ago',
+    timestamp: t('2 hours ago', '2 ure gelede'),
   },
   {
     id: 'campaign-2',
-    title: 'Payday Butcher & Meat Market Madness',
+    title: t(
+      'Payday Butcher & Meat Market Madness',
+      'Salarisdag Slagter & Vleismark Malheid'
+    ),
     image: 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?q=80&w=1200&auto=format&fit=crop',
     video: 'https://assets.mixkit.co/videos/preview/mixkit-chef-cutting-vegetables-on-a-wooden-board-43141-large.mp4',
-    caption: 'Payday madness is here! Premium cuts, succulent steaks & butcher bundles ready for the weekend grill. Don’t miss out on our biggest drop yet. 🔥🥩',
-    hashtags: '#PaydaySpecials #ButcherQuality #GrillMaster #OnawaMarket #WeekendVibes',
-    price: '$9.99 /pack',
+    caption: t(
+      'Payday madness is here! Premium cuts, succulent steaks & butcher bundles ready for the weekend grill. Don’t miss out on our biggest drop yet. 🔥🥩',
+      'Salarisdag-malheid is hier! Premium-snitte, sappige steaks & slagterpakkette reg vir die naweek-braai. Moenie ons grootste afplas tot dusver misloop nie. 🔥🥩'
+    ),
+    hashtags: t(
+      '#PaydaySpecials #ButcherQuality #GrillMaster #OnawaMarket #WeekendVibes',
+      '#SalarisdagSpesiale #SlagterKwaliteit #BraaiMeester #OnawaMark #NaweekVibes'
+    ),
+    price: t('$9.99 /pack', '$9.99 /pakkie'),
     likes: '2.8k',
     comments: '245',
     shares: '890',
-    timestamp: '4 hours ago',
+    timestamp: t('4 hours ago', '4 ure gelede'),
   },
   {
     id: 'campaign-3',
-    title: 'Bakery Morning Warmth & Artisan Bread',
+    title: t(
+      'Bakery Morning Warmth & Artisan Bread',
+      'Bakkery Oggendwarmte & Artisane Brood'
+    ),
     image: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop',
     video: 'https://assets.mixkit.co/videos/preview/mixkit-baker-taking-bread-out-of-the-oven-43142-large.mp4',
-    caption: 'Fresh out of the oven! Artisan sourdough, golden croissants & morning roast coffee waiting for you. Rise and shine with Onawa Bakery. 🥐☕',
-    hashtags: '#FreshBakery #MorningCoffee #ArtisanBread #OnawaFresh #BreakfastGoals',
-    price: '$3.49 each',
+    caption: t(
+      'Fresh out of the oven! Artisan sourdough, golden croissants & morning roast coffee waiting for you. Rise and shine with Onawa Bakery. 🥐☕',
+      'Vars uit die oond! Artisane suurdeegbrood, goue croissante & oggend-braankoffie wat vir jou wag. Rys en skyn saam met Onawa Bakkery. 🥐☕'
+    ),
+    hashtags: t(
+      '#FreshBakery #MorningCoffee #ArtisanBread #OnawaFresh #BreakfastGoals',
+      '#VarsBakkery #OggendKoffie #ArtisaneBrood #OnawaFresh #OntbytDoelwitte'
+    ),
+    price: t('$3.49 each', '$3.49 elk'),
     likes: '954',
     comments: '86',
     shares: '150',
-    timestamp: 'Yesterday',
+    timestamp: t('Yesterday', 'Gister'),
   },
 ];
 
@@ -86,53 +116,74 @@ interface RetailPackage {
   notInBasket?: string[];
 }
 
-const RETAIL_PACKAGES: RetailPackage[] = [
+// Retail packages (factory so every string is translated via t()).
+// Package names stay: OkaLaaitie / Omtat / Mekulu. Pricing confirmed:
+// 850 / 1,500 / 2,500 per month.
+const makeRetailPackages = (t: (en: string, af: string) => string): RetailPackage[] => [
   {
     id: 'okalaaitie',
     name: 'OkaLaaitie',
     price: 'N$850',
     rawPrice: '850',
-    personality: 'THE ESSENTIALS',
-    visualMessage: 'THE ESSENTIALS',
-    shortDesc: "Your store's creative starter basket.",
+    personality: t('THE ESSENTIALS', 'DIE ESSENSIËLES'),
+    visualMessage: t('THE ESSENTIALS', 'DIE ESSENSIËLES'),
+    shortDesc: t(
+      "Your store's creative starter basket.",
+      'Jou winkel se kreatiewe startmandjie.'
+    ),
     accentColor: '#ccff00',
     badgeBg: 'bg-[#ccff00] text-black',
     cardBorderClass: '',
     trolleyTier: 'small',
     barcode: '0 85000 12042 1',
-    buttonLabel: 'PICK MY BASKET',
+    buttonLabel: t('PICK MY BASKET', 'KIES MY MANDJIE'),
     buttonAccentColor: 'text-[#ccff00] border-[#ccff00]/40',
     inclusions: [
       {
-        category: 'DIGITAL & PRINT GRAPHICS',
-        detail: '3 requests / week',
+        category: t('DIGITAL & PRINT GRAPHICS', 'DIGITALE & DRUKGRAFIKA'),
+        detail: t('3 requests / week', '3 versoeke / week'),
         isIncluded: true,
       },
       {
-        category: 'LEAFLET DESIGN',
-        detail: '1 leaflet / week',
-        subdetail: 'Max 20 items per leaflet',
+        category: t('LEAFLET DESIGN', 'PAMFLETONTWERP'),
+        detail: t('1 leaflet / week', '1 pamflet / week'),
+        subdetail: t('Max 20 items per leaflet', 'Maks 20 items per pamflet'),
         isIncluded: true,
       },
       {
-        category: 'SEASONAL CAMPAIGNS',
-        detail: 'Included',
-        subdetail: 'Holiday & seasonal event graphics',
+        category: t('SEASONAL CAMPAIGNS', 'SEISOENALE VELDTOGTE'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Holiday & seasonal event graphics', 'Vakansie- & seisoenale geleentheidgrafika'),
         isIncluded: true,
       },
       {
-        category: 'SOCIAL MEDIA MANAGEMENT',
-        detail: 'INCLUDED FREE',
-        subdetail: 'Schedules & publishes created designs',
+        category: t('SOCIAL MEDIA MANAGEMENT', 'SOSIALE MEDIA-BESTUUR'),
+        detail: t('INCLUDED FREE', 'INGESLUIT VERNIET'),
+        subdetail: t('Schedules & publishes created designs', 'Skeduleer & publiseer geskepte ontwerpe'),
         isIncluded: true,
       },
     ],
     notInBasket: [
-      'Motion graphic reels (1 reel / week in Omtat, Unlimited in Mekulu)',
-      'Higher weekly design allowance (5 requests / week in Omtat)',
-      'Higher weekly leaflet allowance (2 leaflets / week in Omtat)',
-      'Digital & print-ready supporting materials (shelf talkers, nametags, notices, house rules)',
-      'Unlimited design, motion reels & leaflets (available in Mekulu)',
+      t(
+        'Motion graphic reels (1 reel / week in Omtat, Unlimited in Mekulu)',
+        'Bewegende grafikareels (1 reel / week in Omtat, onbeperk in Mekulu)'
+      ),
+      t(
+        'Higher weekly design allowance (5 requests / week in Omtat)',
+        'Hoër weeklikse ontwerptoelae (5 versoeke / week in Omtat)'
+      ),
+      t(
+        'Higher weekly leaflet allowance (2 leaflets / week in Omtat)',
+        'Hoër weeklikse pamflettoelae (2 pamflette / week in Omtat)'
+      ),
+      t(
+        'Digital & print-ready supporting materials (shelf talkers, nametags, notices, house rules)',
+        'Digitale & drukgereed bykomende materiaal (rakpraatjies, naamplaatjies, kennisgewings, huisreëls)'
+      ),
+      t(
+        'Unlimited design, motion reels & leaflets (available in Mekulu)',
+        'Onbeperkte ontwerp, motion reels & pamflette (beskikbaar in Mekulu)'
+      ),
     ],
   },
   {
@@ -140,52 +191,55 @@ const RETAIL_PACKAGES: RetailPackage[] = [
     name: 'Omtat',
     price: 'N$1,500',
     rawPrice: '1,500',
-    personality: 'THE EXTRA AISLE',
-    visualMessage: 'THE EXTRA AISLE',
-    shortDesc: 'More room in the basket. More creative on the shelves.',
+    personality: t('THE EXTRA AISLE', 'DIE EKSTRA GANG'),
+    visualMessage: t('THE EXTRA AISLE', 'DIE EKSTRA GANG'),
+    shortDesc: t(
+      'More room in the basket. More creative on the shelves.',
+      'Meer plek in die mandjie. Meer kreatiwiteit op die rakke.'
+    ),
     accentColor: '#ff2a85',
     badgeBg: 'bg-[#DB0C36] text-white',
     cardBorderClass: 'border-2 border-pink-500/30',
-    stamp: 'MORE REQUESTS. MORE FORMATS. MORE FLEXIBILITY.',
+    stamp: t('MORE REQUESTS. MORE FORMATS. MORE FLEXIBILITY.', 'MEER VERSOEKE. MEER FORMATE. MEER FLEKSIBILITEIT.'),
     stampBorder: 'border-pink-500 text-pink-600',
     stampText: 'text-pink-600',
     trolleyTier: 'medium',
     barcode: '0 15000 23098 7',
-    buttonLabel: 'UPGRADE MY CREATIVE',
+    buttonLabel: t('UPGRADE MY CREATIVE', 'OPGRADEER MY KREATIWITEIT'),
     buttonAccentColor: 'text-[#ff2a85] border-[#ff2a85]/40',
     inclusions: [
       {
-        category: 'DIGITAL & PRINT GRAPHICS',
-        detail: '5 requests / week',
+        category: t('DIGITAL & PRINT GRAPHICS', 'DIGITALE & DRUKGRAFIKA'),
+        detail: t('5 requests / week', '5 versoeke / week'),
         isIncluded: true,
       },
       {
-        category: 'MOTION GRAPHIC REELS',
-        detail: '1 motion reel / week',
+        category: t('MOTION GRAPHIC REELS', 'MOTIONGRAFIKAREELS'),
+        detail: t('1 motion reel / week', '1 motion reel / week'),
         isIncluded: true,
       },
       {
-        category: 'LEAFLET DESIGN',
-        detail: '2 leaflets / week',
-        subdetail: 'Max 20 items per leaflet each',
+        category: t('LEAFLET DESIGN', 'PAMFLETONTWERP'),
+        detail: t('2 leaflets / week', '2 pamflette / week'),
+        subdetail: t('Max 20 items per leaflet each', 'Maks 20 items per pamflet elk'),
         isIncluded: true,
       },
       {
-        category: 'DIGITAL & PRINT-READY MATERIALS',
-        detail: 'Included',
-        subdetail: 'Shelf talkers, nametags, notices, vacancy & house rules',
+        category: t('DIGITAL & PRINT-READY MATERIALS', 'DIGITALE & DRUKGEREDE MATERIAAL'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Shelf talkers, nametags, notices, vacancy & house rules', 'Rakpraatjies, naamplaatjies, kennisgewings, vakature & huisreëls'),
         isIncluded: true,
       },
       {
-        category: 'SEASONAL CAMPAIGNS',
-        detail: 'Included',
-        subdetail: 'Full seasonal campaign packages',
+        category: t('SEASONAL CAMPAIGNS', 'SEISOENALE VELDTOGTE'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Full seasonal campaign packages', 'Volledige seisoenale veldtogpakkette'),
         isIncluded: true,
       },
       {
-        category: 'SOCIAL MEDIA MANAGEMENT',
-        detail: 'INCLUDED FREE',
-        subdetail: 'Schedules & publishes created designs',
+        category: t('SOCIAL MEDIA MANAGEMENT', 'SOSIALE MEDIA-BESTUUR'),
+        detail: t('INCLUDED FREE', 'INGESLUIT VERNIET'),
+        subdetail: t('Schedules & publishes created designs', 'Skeduleer & publiseer geskepte ontwerpe'),
         isIncluded: true,
       },
     ],
@@ -195,58 +249,61 @@ const RETAIL_PACKAGES: RetailPackage[] = [
     name: 'Mekulu',
     price: 'N$2,500',
     rawPrice: '2,500',
-    personality: 'THE FULL TROLLEY',
-    visualMessage: 'THE FULL TROLLEY',
-    shortDesc: 'Your creative needs? Load them up.',
+    personality: t('THE FULL TROLLEY', 'DIE VOLLE TROLLEI'),
+    visualMessage: t('THE FULL TROLLEY', 'DIE VOLLE TROLLEI'),
+    shortDesc: t(
+      'Your creative needs? Load them up.',
+      'Jou kreatiewe behoeftes? Laai hulle op.'
+    ),
     accentColor: '#25F4EE',
     badgeBg: 'bg-black text-[#25F4EE] border border-[#25F4EE]',
     cardBorderClass: 'border-2 border-cyan-500/40',
-    stamp: 'MAXIMUM CREATIVE',
+    stamp: t('MAXIMUM CREATIVE', 'MAKSIMALE KREATIWITEIT'),
     stampBorder: 'border-cyan-600 text-cyan-600',
     stampText: 'text-cyan-600',
     trolleyTier: 'full',
     barcode: '0 25000 99420 5',
-    buttonLabel: 'LOAD UP THE TROLLEY',
+    buttonLabel: t('LOAD UP THE TROLLEY', 'LAAI DIE TROLLEI VOL'),
     buttonAccentColor: 'text-[#25F4EE] border-[#25F4EE]/40',
     inclusions: [
       {
-        category: 'DIGITAL & PRINT GRAPHICS',
-        detail: 'UNLIMITED',
-        subdetail: 'Queue-based continuous design pipeline',
+        category: t('DIGITAL & PRINT GRAPHICS', 'DIGITALE & DRUKGRAFIKA'),
+        detail: t('UNLIMITED', 'ONBEPERK'),
+        subdetail: t('Queue-based continuous design pipeline', 'Deurlopende ontwerppyplyn op waglys-basis'),
         isIncluded: true,
         isUnlimited: true,
       },
       {
-        category: 'MOTION GRAPHIC REELS',
-        detail: 'UNLIMITED',
-        subdetail: 'Automated 4K motion videos & reels',
+        category: t('MOTION GRAPHIC REELS', 'MOTIONGRAFIKAREELS'),
+        detail: t('UNLIMITED', 'ONBEPERK'),
+        subdetail: t('Automated 4K motion videos & reels', 'Outomatiese 4K-motion videos & reels'),
         isIncluded: true,
         isUnlimited: true,
       },
       {
-        category: 'LEAFLET DESIGN',
-        detail: 'UNLIMITED',
-        subdetail: 'Unlimited digital & print promotional leaflets',
+        category: t('LEAFLET DESIGN', 'PAMFLETONTWERP'),
+        detail: t('UNLIMITED', 'ONBEPERK'),
+        subdetail: t('Unlimited digital & print promotional leaflets', 'Onbeperkte digitale & drukpromosiepamflette'),
         isIncluded: true,
         isUnlimited: true,
       },
       {
-        category: 'DIGITAL & PRINT-READY MATERIALS',
-        detail: 'UNLIMITED',
-        subdetail: 'Shelf talkers, nametags, notices, house rules & signage',
+        category: t('DIGITAL & PRINT-READY MATERIALS', 'DIGITALE & DRUKGEREDE MATERIAAL'),
+        detail: t('UNLIMITED', 'ONBEPERK'),
+        subdetail: t('Shelf talkers, nametags, notices, house rules & signage', 'Rakpraatjies, naamplaatjies, kennisgewings, huisreëls & bordwerk'),
         isIncluded: true,
         isUnlimited: true,
       },
       {
-        category: 'SEASONAL CAMPAIGNS',
-        detail: 'Included',
-        subdetail: 'Priority seasonal campaign releases',
+        category: t('SEASONAL CAMPAIGNS', 'SEISOENALE VELDTOGTE'),
+        detail: t('Included', 'Ingesluit'),
+        subdetail: t('Priority seasonal campaign releases', 'Prioriteitsvrystellings van seisoenale veldtogte'),
         isIncluded: true,
       },
       {
-        category: 'SOCIAL MEDIA MANAGEMENT',
-        detail: 'INCLUDED FREE',
-        subdetail: 'Active scheduling & omnichannel publishing',
+        category: t('SOCIAL MEDIA MANAGEMENT', 'SOSIALE MEDIA-BESTUUR'),
+        detail: t('INCLUDED FREE', 'INGESLUIT VERNIET'),
+        subdetail: t('Active scheduling & omnichannel publishing', 'Aktiewe skedulering & omnichannel-publisering'),
         isIncluded: true,
       },
     ],
@@ -295,6 +352,7 @@ const ScannerLine: React.FC<{ className?: string; color?: string }> = ({ classNa
 );
 
 export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) => {
+  const { lang, t } = useLanguage();
   const [activePlatform, setActivePlatform] = useState<'facebook' | 'instagram' | 'tiktok' | 'whatsapp'>('facebook');
   const [selectedAssetIndex] = useState(0);
   const [isLiked, setIsLiked] = useState(false);
@@ -302,8 +360,9 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   const heroRef = useRef<HTMLHeadingElement>(null);
 
-  // Width fit for "DESERVES": ratio of "Your store"'s width to "DESERVES"'s
+  // Width fit for "DESERVES": ratio of line-1's width to "DESERVES"'s
   // natural width, written into --title-fit and consumed by .title-fit-width.
+  // Depends on lang: the headline words swap with the language switch.
   useEffect(() => {
     const h1 = heroRef.current;
     if (!h1) return;
@@ -340,55 +399,75 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       ro.disconnect();
       window.removeEventListener('resize', schedule);
     };
-  }, []);
+  }, [lang]);
 
-  const currentAsset = CAMPAIGN_ASSETS[selectedAssetIndex];
+  const campaignAssets = makeCampaignAssets(t);
+  const retailPackages = makeRetailPackages(t);
+  const currentAsset = campaignAssets[selectedAssetIndex];
 
   const handleWhatsAppEnquiry = (pkgName: string, price: string) => {
-    const message = `Hi Onawa Studio! I'm interested in the ${pkgName} package at N$${price} per month for my store. Can we chat about getting started?`;
-    const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+    const message = t(
+      `Hi Onawa Studio! I'm interested in the ${pkgName} package at N$${price} per month for my store. Can we chat about getting started?`,
+      `Hallo Onawa Studio! Ek is belanggesteld in die ${pkgName}-pakkie teen N$${price} per maand vir my winkel. Kan ons gesels oor hoe om te begin?`
+    );
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
   const features = [
     {
       id: 1,
-      title: 'Promotional designs',
-      desc: "Make those prices impossible to ignore. Well, almost. We can't control your customers.",
+      title: t('Promotional designs', 'Promosie-ontwerpe'),
+      desc: t(
+        "Make those prices impossible to ignore. Well, almost. We can't control your customers.",
+        'Maak daardie pryse onmoontlik om te ignoreer. Wel, byna. Ons kan nie jou kliënte beheer nie.'
+      ),
       icon: <Tag className="w-5 h-5 text-[#ccff00]" />,
-      tag: '01 // PROMOS',
+      tag: t('01 // PROMOS', '01 // PROMOSIES'),
       bgImage: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 2,
-      title: 'Digital leaflets',
-      desc: 'Your specials, neatly packed and ready to share. No paper cuts required.',
+      title: t('Digital leaflets', 'Digitale pamflette'),
+      desc: t(
+        'Your specials, neatly packed and ready to share. No paper cuts required.',
+        'Jou spesiale, netjies verpak en gereed om te deel. Geen papiersnye nodig nie.'
+      ),
       icon: <FileText className="w-5 h-5 text-[#ccff00]" />,
-      tag: '02 // CIRCULARS',
+      tag: t('02 // CIRCULARS', '02 // WINKELBLAAIE'),
       bgImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 3,
-      title: 'Motion graphics',
-      desc: 'Because sometimes a special deserves more than standing still.',
+      title: t('Motion graphics', 'Motion-grafika'),
+      desc: t(
+        'Because sometimes a special deserves more than standing still.',
+        'Want soms verdien ’n spesiaal meer as om stil te staan.'
+      ),
       icon: <Film className="w-5 h-5 text-[#ccff00]" />,
-      tag: '03 // MOTION LAB',
+      tag: t('03 // MOTION LAB', '03 // MOTION-LAB'),
       bgImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 4,
-      title: 'Social content & publishing',
-      desc: "We create, caption, schedule and publish. Your pages don't have to look like the lights are off.",
+      title: t('Social content & publishing', 'Sosiale inhoud & publisering'),
+      desc: t(
+        "We create, caption, schedule and publish. Your pages don't have to look like the lights are off.",
+        'Ons skep, skryf opskrifte, skeduleer en publiseer. Jou bladsye hoef nie te lyk of die ligte is af nie.'
+      ),
       icon: <Share2 className="w-5 h-5 text-[#ccff00]" />,
-      tag: '04 // MULTI-FEED',
+      tag: t('04 // MULTI-FEED', '04 // MULTI-FEED'),
       bgImage: 'https://images.unsplash.com/photo-1534536281715-e28d76684b5d?q=80&w=1600&auto=format&fit=crop',
     },
     {
       id: 5,
-      title: 'Websites & Apps',
-      desc: "For if a store wants its own custom branded website or mobile ordering app.",
+      title: t('Websites & Apps', 'Webwerwe & Programme'),
+      desc: t(
+        'For if a store wants its own custom branded website or mobile ordering app.',
+        'Vir wanneer ’n winkel sy eie handelsmerk-webwerf of mobiele bestelprogram wil hê.'
+      ),
       icon: <Globe className="w-5 h-5 text-[#ccff00]" />,
-      tag: '05 // DIGITAL STORE',
+      tag: t('05 // DIGITAL STORE', '05 // DIGITALE WINKEL'),
       bgImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop',
     },
   ];
@@ -534,7 +613,15 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
         <div className="bg-white/60 backdrop-blur-xl border border-black/10 p-4 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)]">
           <div className="text-[10px] font-mono text-[#4d7c0f] uppercase tracking-widest mb-3 text-center">ONAWA STUDIO</div>
           <LineSidebar
-            items={['Retail Reality', 'Promos & Ads', 'Digital Leaflets', 'Motion Labs', 'Social Feed', 'Websites & Apps', 'Receipt Pricing']}
+            items={[
+              t('Retail Reality', 'Winkelrealiteit'),
+              t('Promos & Ads', 'Promosies & Advertensies'),
+              t('Digital Leaflets', 'Digitale Pamflette'),
+              t('Motion Labs', 'Motion-Laboratoriums'),
+              t('Social Feed', 'Sosiale Voer'),
+              t('Websites & Apps', 'Webwerwe & Programme'),
+              t('Receipt Pricing', 'Kassastrokie-Pryse'),
+            ]}
             accentColor="#DB0C36"
             textColor="#52525b"
             markerColor="#a1a1aa"
@@ -572,13 +659,13 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             <div className="max-w-xl lg:max-w-2xl pointer-events-auto flex-1 flex flex-col justify-center translate-y-6 lg:translate-y-10">
               <h1 ref={heroRef} className="hero-title text-[#1c1c1e] mb-8 sm:mb-10">
                 <span className="block hero-line1">
-                  <span className="color-salmon font-outfit whitespace-nowrap"><span className="font-glamour-initial">Y</span>our store</span>
+                  <span className="color-salmon font-outfit whitespace-nowrap"><span className="font-glamour-initial">{t('Y', 'J')}</span>{t('our store', 'ou winkel')}</span>
                 </span>
-                <span className="block font-griffits color-heading uppercase title-fit-width">DESERVES</span>
+                <span className="block font-griffits color-heading uppercase title-fit-width">{t('DESERVES', 'VERDIEN')}</span>
                 <span className="block hero-crossover">
-                  <span className="color-heading font-outfit hero-smaller">it's</span>{' '}
-                  <span className="hero-own color-salmon font-outfit">own</span>{' '}
-                  <span className="color-salmon font-griffits"><span className="font-glamour-initial glamour-tight">C</span>reative team</span>
+                  <span className="color-heading font-outfit hero-smaller">{t('its', 'sy eie')}</span>{' '}
+                  <span className="hero-own color-salmon font-outfit">{t('own', 'Kreatiewe')}</span>{' '}
+                  <span className="color-salmon font-griffits"><span className="font-glamour-initial glamour-tight">{t('C', 's')}</span>{t('reative team', 'pan')}</span>
                 </span>
               </h1>
             </div>
@@ -587,10 +674,10 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             <div className="max-w-lg pointer-events-auto mt-auto">
               <LineSidebar
                   items={[
-                    'Promos & Weekly Deals',
-                    'Print & Digital Leaflets',
-                    'Automated 4K Video',
-                    'Omnichannel Social Media'
+                    t('Promos & Weekly Deals', 'Promosies & Weeklikse Spesiale'),
+                    t('Print & Digital Leaflets', 'Druk- & Digitale Pamflette'),
+                    t('Automated 4K Video', 'Outomatiese 4K Video'),
+                    t('Omnichannel Social Media', 'Omnichannel Sosiale Media')
                   ]}
                   accentColor="#DB0C36"
                   textColor="#3f3f46"
@@ -640,7 +727,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                 <div className="absolute bottom-4 left-4 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-[#ccff00] font-mono text-xs font-bold flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-pulse" />
-                  <span>LIVE FOOTAGE // RETAIL WORKFLOW</span>
+                  <span>{t('LIVE FOOTAGE // RETAIL WORKFLOW', 'LEWENDE BEELDE // WINKELWERKVLOEI')}</span>
                 </div>
               </div>
             </div>
@@ -649,20 +736,20 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             <div className="lg:col-span-6 flex flex-col">
               <div className="mb-6 self-end inline-flex items-center gap-2.5 rounded-full bg-black/[0.04] px-3.5 py-1.5 ring-1 ring-black/10 backdrop-blur-md">
                 <span className="inline-flex items-center text-xs font-semibold text-neutral-950 bg-[#ff2a85] rounded-full py-0.5 px-2 font-mono">
-                  REALITY
+                  {t('REALITY', 'WERKELIKHEID')}
                 </span>
                 <span className="text-xs font-mono font-medium text-zinc-700 uppercase tracking-widest">
-                  The Retail Reality
+                  {t('The Retail Reality', 'Die Winkelwerklikheid')}
                 </span>
               </div>
 
               <h2 className="type-title text-[#1c1c1e] mb-6">
                 <span className="block">
-                  <span className="fancy-initial">S</span><span className="font-outfit font-medium">pecials don't</span>
+                  <span className="fancy-initial">S</span><span className="font-outfit font-medium">{t("pesials don't", 'pesiale promoveer')}</span>
                 </span>
                 <span className="block -mt-1.5 text-[#DB0C36]">
-                  <span className="font-griffits">Promote</span>{' '}
-                  <span className="font-outfit font-medium">themselves.</span>
+                  <span className="font-griffits">{t('Promote', 'nie')}</span>{' '}
+                  <span className="font-outfit font-medium">{t('themselves.', 'hulself nie.')}</span>
                 </span>
               </h2>
 
@@ -670,13 +757,13 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
               <div className="type-lead space-y-6 text-zinc-600 font-light leading-relaxed max-w-xl">
                 <p className="text-[#1c1c1e] font-normal">
-                  New prices. Weekend specials. Fresh stock. Payday madness. Another leaflet due yesterday.
+                  {t('New prices. Weekend specials. Fresh stock. Payday madness. Another leaflet due yesterday.', 'Nuwe pryse. Naweek-spesiale. Vars voorraad. Salarisdag-malheid. Nog ’n pamflet wat gister moes aflê.')}
                 </p>
                 <p className="text-zinc-500">
-                  Your store never runs out of things to promote. But coming up with the designs, getting them ready and keeping your pages active? That's a whole other shopping list.
+                  {t('Your store never runs out of things to promote. But coming up with the designs, getting them ready and keeping your pages active? That’s a whole other shopping list.', 'Jou winkel raak nooit klaar met dinge om te promoveer nie. Maar om die ontwerpe te bedink, hulle gereed te kry en jou bladsye aktief te hou? Dis ’n hele ander inkopielys.')}
                 </p>
                 <p className="text-[#1c1c1e] font-medium text-lg sm:text-xl pt-4 border-t border-black/10">
-                  Good thing you don't have to do it all yourself.
+                  {t('Good thing you don’t have to do it all yourself.', 'Gelukkig hoef jy nie alles self te doen nie.')}
                 </p>
               </div>
             </div>
@@ -711,23 +798,23 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#ccff00]/10 border border-[#ccff00]/30 mb-6">
               <Zap className="w-3.5 h-3.5 text-[#ccff00] animate-pulse" />
               <span className="text-xs font-mono tracking-widest text-[#ccff00] uppercase font-semibold">
-                Autonomous Creative Department
+                {t('Autonomous Creative Department', 'Outonome Kreatiewe Departement')}
               </span>
             </div>
 
             <h2 className="type-title text-white mb-6">
               <span className="block">
-                <span className="font-glamour-initial">Y</span><span className="font-outfit font-medium">ou sell the </span><span className="font-griffits uppercase">Goods.</span>
+                <span className="font-glamour-initial">{t('Y', 'J')}</span><span className="font-outfit font-medium">{t('ou sell the ', 'y verkoop die ')}</span><span className="font-griffits uppercase">{t('Goods.', 'Ware.')}</span>
               </span>
               <span className="block -mt-1.5 text-[#ccff00] drop-shadow-[0_0_25px_rgba(204,255,0,0.4)]">
-                <span className="font-outfit font-medium">we make them </span><span className="font-griffits uppercase">look good.</span>
+                <span className="font-outfit font-medium">{t('we make them ', 'ons maak hulle ')}</span><span className="font-griffits uppercase">{t('look good.', 'mooi.')}</span>
               </span>
             </h2>
 
             <ScannerLine className="mb-8" color="#ccff00" />
 
             <p className="type-lead-oneline text-zinc-300 font-light">
-              Think of Onawa as your creative department — without another desk to squeeze into the office.
+              {t('Think of Onawa as your creative department — without another desk to squeeze into the office.', 'Kyk na Onawa as jou kreatiewe departement — zonder nog ’n lessenaar wat in die kantoor moet pas.')}
             </p>
           </div>
 
@@ -791,8 +878,8 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                 </p>
 
                 <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs font-mono text-zinc-400">
-                  <span>ONAWA CREATIVE DEPT</span>
-                  <span className="text-[#ccff00]">ACTIVE SELECTION</span>
+                  <span>{t('ONAWA CREATIVE DEPT', 'ONAWA KREATIEWE DEPT')}</span>
+                  <span className="text-[#ccff00]">{t('ACTIVE SELECTION', 'AKTIEWE KEUSE')}</span>
                 </div>
               </div>
             </div>
@@ -810,22 +897,22 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] border border-black/10 mb-6 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ff2a85] shadow-[0_0_8px_#ff2a85] animate-pulse" />
               <span className="text-xs font-mono tracking-widest text-[#DB0C36] uppercase font-semibold">
-                THE PROOF
+                {t('THE PROOF', 'DIE BEWYS')}
               </span>
             </div>
 
             <h2 className="type-title text-[#1c1c1e] mb-6">
               <span className="block">
-                <span className="font-glamour-initial">L</span><span className="font-outfit font-medium">ess talk. more </span>
+                <span className="font-glamour-initial">{t('L', 'M')}</span><span className="font-outfit font-medium">{t('ess talk. more ', 'inder gepraat. meer ')}</span>
               </span>
-              <span className="block -mt-1.5 text-[#DB0C36] font-griffits uppercase">“WHO MADE THAT?”</span>
+              <span className="block -mt-1.5 text-[#DB0C36] font-griffits uppercase">{t('“WHO MADE THAT?”', '“WIE HET DIT GEMAAK?”')}</span>
             </h2>
 
             <ScannerLine className="mx-auto mb-8" />
 
             <p className="type-lead text-zinc-600 font-light max-w-2xl mx-auto">
-              “Your specials deserve more than a price tag.<br />
-              See how good they could look on your socials.”
+              {t('“Your specials deserve more than a price tag.', '“Jou spesiale verdien meer as ’n prys-etiket.')}<br />
+              {t('See how good they could look on your socials.”', 'Kyk hoe goed hulle op jou sosiale media sou lyk.”')}
             </p>
           </div>
 
@@ -910,7 +997,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                         <h3 className="text-lg sm:text-xl font-bold text-white">Onawa Fresh Market</h3>
                         <CheckCircle2 className="w-4 h-4 text-[#1877F2] fill-white" />
                       </div>
-                      <p className="text-xs text-zinc-400">Supermarket Chain • 48K Followers</p>
+                      <p className="text-xs text-zinc-400">{t('Supermarket Chain • 48K Followers', 'Supermarkketting • 48K Volgelinge')}</p>
                     </div>
                   </div>
                 </div>
@@ -942,10 +1029,10 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-black/70 backdrop-blur-md border border-white/20 text-[#ccff00] font-mono text-xs font-bold">
-                      SPECIAL: {currentAsset.price}
+                      {t('SPECIAL:', 'SPESIALE:')} {currentAsset.price}
                     </div>
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                      <span className="px-4 py-2 rounded-full bg-white/90 text-black text-xs font-bold font-mono shadow-lg">Click to View Full Artwork</span>
+                      <span className="px-4 py-2 rounded-full bg-white/90 text-black text-xs font-bold font-mono shadow-lg">{t('Click to View Full Artwork', 'Klik om die Volle Kunswerk te Sien')}</span>
                     </div>
                   </div>
 
@@ -955,7 +1042,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       <span>1.4K</span>
                     </div>
                     <div>
-                      <span>{currentAsset.comments} comments • {currentAsset.shares} shares</span>
+                      <span>{currentAsset.comments} {t('comments', 'kommentare')} • {currentAsset.shares} {t('shares', 'deelinge')}</span>
                     </div>
                   </div>
 
@@ -966,15 +1053,15 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       className={`flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer ${isLiked ? 'text-[#1877F2]' : ''}`}
                     >
                       <ThumbsUp className="w-4 h-4" />
-                      <span>Like</span>
+                      <span>{t('Like', 'Soos')}</span>
                     </button>
                     <button type="button" className="flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
                       <MessageSquare className="w-4 h-4" />
-                      <span>Comment</span>
+                      <span>{t('Comment', 'Kommentaar')}</span>
                     </button>
                     <button type="button" className="flex items-center justify-center gap-2 py-2 rounded-lg hover:bg-white/5 transition-colors cursor-pointer">
                       <Share2 className="w-4 h-4" />
-                      <span>Share</span>
+                      <span>{t('Share', 'Deel')}</span>
                     </button>
                   </div>
                 </div>
@@ -995,22 +1082,22 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-bold text-base sm:text-lg">onawafresh.market</h3>
                         <button type="button" className="px-4 py-1.5 rounded-lg bg-zinc-800 text-xs font-semibold hover:bg-zinc-700 transition-colors">
-                          Following
+                          {t('Following', 'Volg')}
                         </button>
                       </div>
                       <div className="flex items-center gap-6 text-xs sm:text-sm text-zinc-300">
-                        <span><strong>142</strong> posts</span>
-                        <span><strong>48.5K</strong> followers</span>
-                        <span><strong>210</strong> following</span>
+                        <span><strong>142</strong> {t('posts', 'plasings')}</span>
+                        <span><strong>48.5K</strong> {t('followers', 'volgelinge')}</span>
+                        <span><strong>210</strong> {t('following', 'volg')}</span>
                       </div>
                     </div>
                   </div>
                   <div>
                     <h4 className="font-semibold text-sm">Onawa Fresh Market</h4>
                     <p className="text-xs text-zinc-400 mt-1">
-                      🛒 Your weekly grocery destination.<br />
-                      🌿 Autonomous weekly deals & 4K leaflets.<br />
-                      📍 Visit your nearest store below 👇
+                      🛒 {t('Your weekly grocery destination.', 'Jou weeklikse kruideniersbestemming.')}<br />
+                      🌿 {t('Autonomous weekly deals & 4K leaflets.', 'Outonome weeklikse spesiale & 4K-pamflette.')}<br />
+                      📍 {t('Visit your nearest store below 👇', 'Besoek jou naaste winkel hieronder 👇')}
                     </p>
                     <a href="#store" onClick={(e) => e.preventDefault()} className="text-xs text-[#ccff00] font-mono mt-1 block">
                       linktr.ee/onawafresh
@@ -1045,7 +1132,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       </div>
                       <Bookmark className="w-6 h-6 hover:text-zinc-300 transition-colors cursor-pointer" />
                     </div>
-                    <div className="text-xs font-semibold">2,845 likes</div>
+                    <div className="text-xs font-semibold">{t('2,845 likes', '2,845 hou van dit')}</div>
                     <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
                       <strong className="text-white mr-2">onawafresh.market</strong>
                       {currentAsset.caption} <span className="text-[#3897f0]">{currentAsset.hashtags}</span>
@@ -1073,7 +1160,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
                 <div className="relative z-10 p-4 flex items-center justify-between text-white">
                   <div className="text-xs font-mono font-bold bg-white/20 backdrop-blur-md px-3 py-1 rounded-full">
-                    Following | <span className="text-[#25F4EE]">For You</span>
+                    {t('Following', 'Volg')}{' | '}<span className="text-[#25F4EE]">{t('For You', 'Vir Jou')}</span>
                   </div>
                   <Volume2 className="w-5 h-5 text-white/80" />
                 </div>
@@ -1126,7 +1213,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
                   <div className="flex items-center gap-2 text-xs font-mono bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-lg w-fit">
                     <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-ping" />
-                    <span className="truncate max-w-[200px]">Original Sound - Onawa Creative Lab</span>
+                    <span className="truncate max-w-[200px]">{t('Original Sound - Onawa Creative Lab', 'Oorspronklike Klank - Onawa Kreatiewe Laboratorium')}</span>
                   </div>
                 </div>
               </div>
@@ -1144,7 +1231,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                       <h4 className="font-bold text-sm flex items-center gap-1">
                         Onawa Fresh Market <CheckCircle2 className="w-3.5 h-3.5 text-[#25D366] fill-black" />
                       </h4>
-                      <p className="text-[11px] text-[#25D366]">Online • Business Account</p>
+                      <p className="text-[11px] text-[#25D366]">{t('Online • Business Account', 'Aanlyn • Besigheidsrekening')}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4 text-zinc-300">
@@ -1158,22 +1245,22 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                     <div className="relative aspect-[4/3] bg-black">
                       <img src={currentAsset.image} alt="Status" className="w-full h-full object-cover" />
                       <div className="absolute top-3 left-3 px-3 py-1 rounded bg-[#25D366] text-black font-mono text-[11px] font-bold">
-                        WHATSAPP STATUS UPDATE
+                        {t('WHATSAPP STATUS UPDATE', 'WHATSAPP STATUS-WERKENDING')}
                       </div>
                     </div>
                     <div className="p-3 text-xs text-zinc-300 font-mono">
-                      🔥 {currentAsset.title} — Tap to view catalog.
+                      🔥 {currentAsset.title} — {t('Tap to view catalog.', 'Tik om die katalogus te sien.')}
                     </div>
                   </div>
 
                   <div className="bg-[#005c4b] text-white p-3.5 rounded-2xl rounded-tr-none max-w-md ml-auto shadow-md space-y-2">
                     <p className="text-xs sm:text-sm leading-relaxed">
-                      🔔 <strong>ONAWA VIP BULLETIN:</strong><br />
+                      🔔 <strong>{t('ONAWA VIP BULLETIN:', 'ONAWA VIP-NUUSBRIEF:')}</strong><br />
                       {currentAsset.caption}
                     </p>
                     <div className="p-2 rounded-lg bg-black/20 font-mono text-xs text-[#25D366] flex items-center justify-between">
-                      <span>Deal Price: {currentAsset.price}</span>
-                      <span>Valid till Sunday</span>
+                      <span>{t('Deal Price:', 'Aanbiedingsprys:')} {currentAsset.price}</span>
+                      <span>{t('Valid till Sunday', 'Geldig tot Sondag')}</span>
                     </div>
                     <div className="text-[10px] text-zinc-300 text-right">09:42 AM ✓✓</div>
                   </div>
@@ -1181,7 +1268,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
                 <div className="p-3 bg-[#1f2c34] flex items-center gap-3">
                   <div className="flex-1 bg-[#2a3942] px-4 py-2.5 rounded-full text-xs text-zinc-400">
-                    Reply to Onawa Fresh Market...
+                    {t('Reply to Onawa Fresh Market...', 'Antwoord op Onawa Fresh Market...')}
                   </div>
                   <div className="w-10 h-10 rounded-full bg-[#00a884] flex items-center justify-center text-black font-bold">
                     <Send className="w-4 h-4 text-black" />
@@ -1198,14 +1285,14 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               <div className="relative max-w-4xl w-full bg-zinc-900 rounded-3xl overflow-hidden border border-white/20 shadow-2xl">
                 <div className="p-4 bg-zinc-950 flex items-center justify-between border-b border-zinc-800">
                   <span className="font-mono text-xs text-[#ccff00] uppercase tracking-wider">
-                    HD CAMPAIGN ASSET // {currentAsset.title}
+                    {t('HD CAMPAIGN ASSET //', 'HD VELDTOGBATE //')} {currentAsset.title}
                   </span>
                   <button
                     type="button"
                     onClick={() => setIsExpandedImage(false)}
                     className="px-3 py-1 rounded-full bg-white/10 hover:bg-white/20 text-xs text-white font-mono cursor-pointer"
                   >
-                    CLOSE [X]
+                    {t('CLOSE [X]', 'MAAK TOE [X]')}
                   </button>
                 </div>
                 <div className="p-6 flex items-center justify-center bg-black">
@@ -1236,23 +1323,23 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/[0.04] border border-black/10 mb-6 backdrop-blur-md">
               <span className="w-1.5 h-1.5 rounded-full bg-[#ccff00] shadow-[0_0_8px_#ccff00] animate-pulse" />
               <span className="text-xs font-mono tracking-widest text-[#4d7c0f] uppercase font-semibold">
-                YOUR MONTHLY CREATIVE SHOPPING LIST
+                {t('YOUR MONTHLY CREATIVE SHOPPING LIST', 'JOU MAANDELIKSE KREATIEWE INKOPIELYS')}
               </span>
             </div>
 
             <h2 className="type-section text-[#1c1c1e] mb-6">
               <span className="block">
-                <span className="fancy-initial">G</span><span className="font-outfit font-medium">ood </span><span className="font-griffits uppercase">creative.</span>
+                <span className="fancy-initial">G</span><span className="font-outfit font-medium">{t('oeie ', 'oeie ')}</span><span className="font-griffits uppercase">{t('creative.', 'kreatiwiteit.')}</span>
               </span>
-              <span className="block mt-0.5 font-outfit font-medium text-[#4d7c0f]">scanned. sorted.</span>
+              <span className="block mt-0.5 font-outfit font-medium text-[#4d7c0f]">{t('scanned. sorted.', 'gescan. gesorteer.')}</span>
             </h2>
 
             <p className="type-lead text-zinc-600 font-light max-w-2xl mx-auto mb-3">
-              “Pick your package, and let’s get your store looking like the main event.”
+              {t('“Pick your package, and let’s get your store looking like the main event.”', '“Kies jou pakkie, en laat ons jou winkel laat lyk soos die hoofgebeurtenis.”')}
             </p>
 
             <p className="type-ui font-mono text-zinc-500 uppercase tracking-wider">
-              Three packages. One creative partner. No long-term contract.
+              {t('Three packages. One creative partner. No long-term contract.', 'Drie pakkette. Een kreatiewe vennoot. Geen langtermynkontrak nie.')}
             </p>
 
             {/* Subtle Checkout Scanner Laser Line Visual Graphic */}
@@ -1261,7 +1348,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
 
           {/* ==================== 3 TILL SLIP OFFER CARDS NEXT TO EACH OTHER ==================== */}
           <main className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-6 lg:gap-8 items-start pt-6 max-w-6xl mx-auto mb-20">
-            {RETAIL_PACKAGES.map((pkg, idx) => (
+            {retailPackages.map((pkg, idx) => (
               <div
                 key={pkg.id}
                 className={`receipt-paper receipt-fold text-thermal-ink font-mono p-5 sm:p-6 relative select-none rounded-sm ${pkg.cardBorderClass}`}
@@ -1294,10 +1381,10 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                     ONAWA STUDIO TILL
                   </div>
                   <div className="text-[10px] text-zinc-600 tracking-wider">
-                    STORE #0042 // REGISTER #03 // TAX INVOICE
+                    {t('STORE #0042 // REGISTER #03 // TAX INVOICE', 'WINKEL #0042 // REGISTER #03 // BELASTINGFAKTUUR')}
                   </div>
                   <div className="text-[10px] text-zinc-500">
-                    AUTONOMOUS CREATIVE PIPELINE
+                    {t('AUTONOMOUS CREATIVE PIPELINE', 'OUTONOME KREATIEWE PYPLYN')}
                   </div>
                   
                   {/* Visual Message Pill */}
@@ -1346,8 +1433,8 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                 {/* Itemised Services with Perforated Lines */}
                 <div className="space-y-3 font-mono text-xs mb-5">
                   <div className="flex items-center justify-between text-[10px] text-zinc-500 font-semibold border-b border-zinc-300 pb-1 uppercase tracking-wider">
-                    <span>SCAN ITEM</span>
-                    <span>ALLOWANCE</span>
+                    <span>{t('SCAN ITEM', 'SKAN ITEM')}</span>
+                    <span>{t('ALLOWANCE', 'TOELAE')}</span>
                   </div>
 
                   {pkg.inclusions.map((item, i) => (
@@ -1358,7 +1445,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                         <span className={`shrink-0 font-bold ${
                           item.isUnlimited 
                             ? 'text-[#ff2a85] bg-rose-100 px-1 rounded font-black text-xs' 
-                            : item.detail.includes('FREE') 
+                            : item.detail.includes(t('FREE', 'VERNIET'))
                             ? 'text-emerald-700' 
                             : 'text-zinc-950'
                         }`}>
@@ -1380,9 +1467,9 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-[10px] font-bold text-zinc-800 uppercase tracking-wider flex items-center gap-1.5">
                         <XCircle className="w-3.5 h-3.5 text-zinc-500" />
-                        NOT IN THIS BASKET
+                        {t('NOT IN THIS BASKET', 'NIE IN HIERDIE MANDJIE')}
                       </span>
-                      <span className="text-[9px] text-zinc-500 uppercase">NEXT AISLE</span>
+                      <span className="text-[9px] text-zinc-500 uppercase">{t('NEXT AISLE', 'VOLGENDE GANG')}</span>
                     </div>
                     <ul className="space-y-1.5 text-[10px] text-zinc-600">
                       {pkg.notInBasket.map((exclusion, exIdx) => (
@@ -1401,21 +1488,21 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                 {/* Receipt Calculation & Total Section */}
                 <div className="pt-1 mb-5 font-mono space-y-1.5">
                   <div className="flex justify-between text-xs text-zinc-600">
-                    <span>REGULAR SUBTOTAL:</span>
+                    <span>{t('REGULAR SUBTOTAL:', 'GEREELDE SUBTOTAAL:')}</span>
                     <span>N${pkg.rawPrice}.00</span>
                   </div>
                   <div className="flex justify-between text-xs text-zinc-600">
-                    <span>LONG-TERM CONTRACT:</span>
-                    <span className="text-emerald-700 font-bold">N$0.00 (NONE)</span>
+                    <span>{t('LONG-TERM CONTRACT:', 'LANGTERMYNKONTRAK:')}</span>
+                    <span className="text-emerald-700 font-bold">{t('N$0.00 (NONE)', 'N$0.00 (GEEN)')}</span>
                   </div>
                   <div className="flex justify-between text-xs text-zinc-600">
-                    <span>PRINT PRODUCTION:</span>
-                    <span className="text-zinc-500">EXCLUDED (DIGITAL)</span>
+                    <span>{t('PRINT PRODUCTION:', 'DRUKPRODUKSIE:')}</span>
+                    <span className="text-zinc-500">{t('EXCLUDED (DIGITAL)', 'UITGESLUIT (DIGITAAL)')}</span>
                   </div>
                   <div className="flex items-baseline justify-between pt-2 border-t border-zinc-300 text-zinc-950">
-                    <span className="font-black text-sm tracking-wider uppercase">MONTHLY TOTAL:</span>
+                    <span className="font-black text-sm tracking-wider uppercase">{t('MONTHLY TOTAL:', 'MAANDELIKSE TOTAAL:')}</span>
                     <span className="font-black text-2xl sm:text-3xl tracking-tight">
-                      {pkg.price}<span className="text-xs font-normal text-zinc-600">/MO</span>
+                      {pkg.price}<span className="text-xs font-normal text-zinc-600">/{t('MO', 'MA')}</span>
                     </span>
                   </div>
                 </div>
@@ -1434,7 +1521,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                 <BarcodeGraphic code={pkg.barcode} />
 
                 <div className="text-center font-mono text-[9px] text-zinc-500 mt-2 mb-2">
-                  THANK YOU FOR SHOPPING WITH ONAWA FRESH
+                  {t('THANK YOU FOR SHOPPING WITH ONAWA FRESH', 'DANKIE DAT JY BY ONAWA FRESH INKOPIES DOEN')}
                 </div>
 
                 {/* Sawtooth Bottom Edge */}
@@ -1452,28 +1539,28 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
             <div className="p-6 sm:p-8 rounded-3xl bg-white/60 border border-black/10 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
               <div className="flex items-center gap-2.5 mb-4 font-mono text-xs font-semibold text-[#4d7c0f] uppercase tracking-wider">
                 <Info className="w-4 h-4" />
-                <span>TERMS OF ENGAGEMENT & WORKING PROCESS</span>
+                <span>{t('TERMS OF ENGAGEMENT & WORKING PROCESS', 'VOORWAARDES VAN VERSKANSING & WERKSPROSES')}</span>
               </div>
               <ul className="space-y-2.5 text-xs sm:text-sm font-mono text-zinc-600 leading-relaxed">
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Requests are handled one at a time to ensure maximum focus and creative quality.</span>
+                  <span>{t('Requests are handled one at a time to ensure maximum focus and creative quality.', 'Versoeke word een vir een hanteer om maksimum fokus en kreatiewe gehalte te verseker.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Please allow at least one day before your intended release date for standard turnaround.</span>
+                  <span>{t('Please allow at least one day before your intended release date for standard turnaround.', 'Laat asseblief ten minste een dag voor jou beoogde vrystellingsdatum vir standaard deurlooptyd.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Rush requests depend on studio availability and may incur an additional expediting fee.</span>
+                  <span>{t('Rush requests depend on studio availability and may incur an additional expediting fee.', 'Haastige versoeke hang af van die ateljee se beskikbaarheid en kan ’n bykomende versneltarief insluit.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Printing costs are not included. All deliverables are provided as production-ready digital and high-resolution print files.</span>
+                  <span>{t('Printing costs are not included. All deliverables are provided as production-ready digital and high-resolution print files.', 'Drukkoste is nie ingesluit nie. Alle aflewerings word verskaf as produksiegereed digitale en hoë-resolusie druklêers.')}</span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-[#4d7c0f] shrink-0 font-bold">•</span>
-                  <span>Social media management covers scheduling and publishing the created designs; paid advertising budgets, customer service and community management are not included.</span>
+                  <span>{t('Social media management covers scheduling and publishing the created designs; paid advertising budgets, customer service and community management are not included.', 'Sosiale media-bestuur dek skedulering en publisering van die geskepte ontwerpe; betaalde advertensiebegrotings, kliëntediens en gemeenskapsbestuur is nie ingesluit nie.')}</span>
                 </li>
               </ul>
             </div>
@@ -1487,10 +1574,10 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  MONTH-TO-MONTH
+                  {t('MONTH-TO-MONTH', 'MAAND-TOT-MAAND')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  No long-term contract. Cancel or pause whenever your store needs.
+                  {t('No long-term contract. Cancel or pause whenever your store needs.', 'Geen langtermynkontrak nie. Kanselleer of pouseer wanneer jou winkel dit nodig het.')}
                 </p>
               </div>
             </div>
@@ -1501,10 +1588,10 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  ONE CREATIVE PARTNER
+                  {t('ONE CREATIVE PARTNER', 'EEN KREATIEWE VENNOOT')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  Your dedicated ongoing design, motion and content department.
+                  {t('Your dedicated ongoing design, motion and content department.', 'Jou toegewyde deurlopende ontwerp-, motion- en inhoudsdepartement.')}
                 </p>
               </div>
             </div>
@@ -1515,10 +1602,10 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  FOUR PLATFORMS
+                  {t('FOUR PLATFORMS', 'VIER PLATFORMS')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  Facebook, Instagram, TikTok and WhatsApp, per package tier.
+                  {t('Facebook, Instagram, TikTok and WhatsApp, per package tier.', 'Facebook, Instagram, TikTok en WhatsApp, per pakkie-vlak.')}
                 </p>
               </div>
             </div>
@@ -1529,10 +1616,10 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
               </div>
               <div>
                 <h4 className="text-xs font-mono font-bold text-[#1c1c1e] uppercase tracking-wider mb-1">
-                  PRINTING EXCLUDED
+                  {t('PRINTING EXCLUDED', 'DRUKWERK UITGESLUIT')}
                 </h4>
                 <p className="text-xs text-zinc-500 leading-snug font-light">
-                  Digital creative services only unless separately quoted.
+                  {t('Digital creative services only unless separately quoted.', 'Slegs digitale kreatiewe dienste, tensy apart gekwoteer.')}
                 </p>
               </div>
             </div>

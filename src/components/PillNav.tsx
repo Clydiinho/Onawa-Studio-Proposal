@@ -2,6 +2,7 @@
 
 import React, { useEffect, useId, useLayoutEffect, useRef, useState, ReactNode } from 'react';
 import './PillNav.css';
+import { useLanguage } from '../data/language';
 
 const THEMES: Record<string, Record<string, string>> = {
   dark: {
@@ -195,6 +196,8 @@ export const PillNav: React.FC<PillNavProps> = ({
   style
 }) => {
   const panelId = useId();
+  // Site language — translates the menu-toggle aria-label (labels themselves come from props).
+  const { t } = useLanguage();
   const rootRef = useRef<HTMLElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -837,7 +840,7 @@ export const PillNav: React.FC<PillNavProps> = ({
           className={[TOGGLE, joined ? TOGGLE_BARE : SURFACE].join(' ')}
           aria-expanded={open}
           aria-controls={panelId}
-          aria-label={open ? 'Close menu' : 'Open menu'}
+          aria-label={open ? t('Close menu', 'Maak spyskaart toe') : t('Open menu', 'Maak spyskaart oop')}
           onClick={toggle}
         >
           <span className={BURGER} aria-hidden="true">

@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Languages } from 'lucide-react';
 import { Shader, Swirl, ChromaFlow, FlutedGlass, FilmGrain } from 'shaders/react';
 import { InteractiveFolders } from './components/InteractiveFolders';
 import { PillNav } from './components/PillNav';
 import { RetailStorePage } from './pages/RetailStorePage';
 import { ShoppingMallPage } from './pages/ShoppingMallPage';
+import { LanguageProvider, useLanguage } from './data/language';
 
 export type ProposalPage = 'home' | 'retail-store' | 'shopping-mall';
 
@@ -25,7 +26,8 @@ const ScannerLine: React.FC<{ className?: string; color?: string }> = ({ classNa
   </div>
 );
 
-export default function App() {
+function SiteContent() {
+  const { lang, toggleLang, t } = useLanguage();
   const [currentPage, setCurrentPage] = useState<ProposalPage>('home');
 
   // Sync hash routing
@@ -79,7 +81,7 @@ export default function App() {
         <a
           href="#"
           onClick={(e) => { e.preventDefault(); navigateTo('home'); }}
-          aria-label="Onawa Studio — back to home"
+          aria-label={t('Onawa Studio — back to home', 'Onawa Studio — terug na tuis')}
           className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 bg-[rgba(38,35,46,0.66)] backdrop-blur-xl shadow-[0_22px_44px_-20px_rgba(0,0,0,0.8),0_6px_16px_-8px_rgba(0,0,0,0.5)] outline-none cursor-pointer transition-[transform,box-shadow] duration-300 ease-out hover:scale-110 hover:shadow-[0_28px_52px_-20px_rgba(0,0,0,0.85),0_8px_20px_-8px_rgba(0,0,0,0.55)]"
         >
           <img
@@ -93,22 +95,22 @@ export default function App() {
           <PillNav
           items={[
             {
-              label: 'Problem',
+              label: t('Problem', 'Probleem'),
               href: '#problem',
               onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('problem'); },
             },
             {
-              label: 'Solution',
+              label: t('Solution', 'Oplossing'),
               href: '#solution',
               onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('solution'); },
             },
             {
-              label: 'Proof',
+              label: t('Proof', 'Bewys'),
               href: '#proof',
               onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('proof'); },
             },
             {
-              label: 'Offers',
+              label: t('Offers', 'Aanbiedinge'),
               href: '#offers',
               onClick: (e: React.MouseEvent) => { e.preventDefault(); scrollToSection('offers'); },
             },
@@ -123,14 +125,27 @@ export default function App() {
           highlightTextColor="#ffffff"
           />
         )}
-        <button
-          type="button"
-          onClick={() => scrollToSection('offers')}
-          className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#ccff00] transition-colors shadow-lg cursor-pointer"
-        >
-          <span>Get Started</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
+        {/* Language switch — always visible, including mobile. Shows the language
+            you can switch TO: "AFRIKAANS" in English mode, "ENGLISH" in Afrikaans. */}
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            type="button"
+            onClick={toggleLang}
+            aria-label={lang === 'en' ? 'Switch to Afrikaans' : 'Switch to English'}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[rgba(38,35,46,0.66)] backdrop-blur-xl text-white font-mono font-bold text-xs uppercase tracking-wider border border-white/10 hover:bg-[#ccff00] hover:text-black transition-colors shadow-[0_18px_36px_-18px_rgba(0,0,0,0.8)] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#ccff00]"
+          >
+            <Languages className="w-3.5 h-3.5" />
+            <span>{lang === 'en' ? 'AFRIKAANS' : 'ENGLISH'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => scrollToSection('offers')}
+            className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white text-black font-mono font-bold text-xs uppercase tracking-wider hover:bg-[#ccff00] transition-colors shadow-lg cursor-pointer"
+          >
+            <span>{t('Get Started', 'BEGIN NOU')}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
 
       {currentPage === 'retail-store' ? (
@@ -183,21 +198,24 @@ export default function App() {
             {/* Left Column: Hero Text */}
             <div className="max-w-2xl">
               <span className="text-[13px] sm:text-[14px] text-gray-900 tracking-wide mb-5 sm:mb-8 font-medium block">
-                DESIGN • MOTION • DIGITAL • WEBSITE
+                {t('DESIGN • MOTION • DIGITAL • WEBSITE', 'ONTWERP • ANIMASIE • DIGITAAL • WEBWERF')}
               </span>
 
               <ScannerLine className="mb-5 sm:mb-8" />
 
               <h1 className="leading-[1.02] tracking-[-0.03em] text-gray-900">
                 <span className="block font-black tracking-[-0.03em] text-[clamp(2.2rem,8vw,5rem)] sm:text-[clamp(3.2rem,6.2vw,5.5rem)]">
-                  WHAT ARE
+                  {t('WHAT ARE', 'WAT IS')}
                 </span>
                 <span className="flex flex-wrap sm:flex-nowrap items-baseline gap-3 sm:gap-4 mt-1 sm:mt-1.5">
                   <span className="font-['Instrument_Serif','Newsreader',Georgia,serif] italic font-normal tracking-[-0.01em] text-[clamp(2.6rem,9vw,5.8rem)] sm:text-[clamp(3.6rem,7vw,6.2rem)] leading-[0.98]">
-                    YOU?
+                    {t('YOU?', 'JY?')}
                   </span>
                   <span className="font-sans font-medium text-gray-700 not-italic tracking-tight text-[16px] sm:text-[19px] lg:text-[21px] leading-snug sm:leading-tight max-w-[340px] pb-1 sm:pb-2">
-                    Choose the option that best describes your business.
+                    {t(
+                      'Choose the option that best describes your business.',
+                      'Kies die opsie wat die beste by jou besigheid pas.'
+                    )}
                   </span>
                 </span>
               </h1>
@@ -216,5 +234,17 @@ export default function App() {
     </div>
       )}
     </>
+  );
+}
+
+/**
+ * App — wraps the whole site in the language provider so the English /
+ * Afrikaans switch works on every page from a single source of truth.
+ */
+export default function App() {
+  return (
+    <LanguageProvider>
+      <SiteContent />
+    </LanguageProvider>
   );
 }

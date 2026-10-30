@@ -1,5 +1,6 @@
 import React from 'react';
 import GlassFolder, { FolderFile } from './GlassFolder';
+import { useLanguage } from '../data/language';
 
 export interface InteractiveFoldersProps {
   onOpenRetailStore?: () => void;
@@ -7,25 +8,27 @@ export interface InteractiveFoldersProps {
 }
 
 export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRetailStore, onOpenShoppingMall }) => {
+  const { t } = useLanguage();
+
   // Folder 1: "I'm a retail store" files
   const retailFiles: FolderFile[] = [
     {
-      name: 'Promos',
-      meta: 'PDF · Active',
+      name: t('Promos', 'Promosies'),
+      meta: t('PDF · Active', 'PDF · Aktief'),
       art: 'aurora',
     },
     {
-      name: 'Leaflets',
-      meta: 'Print & Digital',
+      name: t('Leaflets', 'Pamflette'),
+      meta: t('Print & Digital', 'Druk & Digitaal'),
       art: 'glacier',
     },
     {
-      name: 'Video',
+      name: t('Video', 'Video'),
       meta: '4K · MP4',
       art: 'ember',
     },
     {
-      name: 'Social Media',
+      name: t('Social Media', 'Sosiale Media'),
       meta: 'Instagram · TikTok',
       art: 'dusk',
     },
@@ -34,23 +37,23 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
   // Folder 2: "I'm a shopping mall" files
   const mallFiles: FolderFile[] = [
     {
-      name: 'Social Media',
-      meta: 'Content Hub',
+      name: t('Social Media', 'Sosiale Media'),
+      meta: t('Content Hub', 'Inhouds-Hub'),
       art: 'ember',
     },
     {
-      name: 'Campaigns',
-      meta: '360° Launch',
+      name: t('Campaigns', 'Veldtogte'),
+      meta: t('360° Launch', '360° Lansering'),
       art: 'dusk',
     },
     {
-      name: 'Digital',
-      meta: 'Interactive Directory',
+      name: t('Digital', 'Digitaal'),
+      meta: t('Interactive Directory', 'Interaktiewe Gids'),
       art: 'glacier',
     },
     {
-      name: 'Experiences',
-      meta: 'Spatial In-Mall',
+      name: t('Experiences', 'Ervarings'),
+      meta: t('Spatial In-Mall', 'Ruimtelik In-Sentrum'),
       art: 'aurora',
     },
   ];
@@ -62,13 +65,13 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
         {/* FOLDER 1: "I'm a retail store" (Milk Glass, Glacier art, + add button) */}
         <div className="relative group">
           <GlassFolder
-            label="I'm a retail store"
+            label={t("I'm a retail store", 'Ek is ’n winkel')}
             meta={
               <div className="space-y-0.5 mt-1 font-normal leading-tight text-[11px] sm:text-[12px]">
-                <p>- Promos</p>
-                <p>- Leaflets</p>
-                <p>- Video</p>
-                <p>- Social Media</p>
+                <p>- {t('Promos', 'Promosies')}</p>
+                <p>- {t('Leaflets', 'Pamflette')}</p>
+                <p>- {t('Video', 'Video')}</p>
+                <p>- {t('Social Media', 'Sosiale Media')}</p>
               </div>
             }
             tone="light"
@@ -88,13 +91,13 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
         {/* FOLDER 2: "I'm a shopping mall" (Smoked Glass, Ember art, ··· more button) */}
         <div className="relative group">
           <GlassFolder
-            label="I'm a shopping mall"
+            label={t("I'm a shopping mall", 'Ek is ’n winkelsentrum')}
             meta={
               <div className="space-y-0.5 mt-1 font-normal leading-tight text-[11px] sm:text-[12px]">
-                <p>- Social Media</p>
-                <p>- Campaigns</p>
-                <p>- Digital</p>
-                <p>- Experiences</p>
+                <p>- {t('Social Media', 'Sosiale Media')}</p>
+                <p>- {t('Campaigns', 'Veldtogte')}</p>
+                <p>- {t('Digital', 'Digitaal')}</p>
+                <p>- {t('Experiences', 'Ervarings')}</p>
               </div>
             }
             tone="dark"
@@ -106,9 +109,9 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
               onOpenShoppingMall?.();
             }}
             menu={[
-              { label: 'Explore Mall Solutions', onSelect: () => onOpenShoppingMall?.() },
-              { label: 'Campaign Case Studies', onSelect: () => onOpenShoppingMall?.() },
-              { label: 'Book Mall Strategy Call', onSelect: () => onOpenShoppingMall?.() },
+              { label: t('Explore Mall Solutions', 'Verken Sentrum-Oplossinge'), onSelect: () => onOpenShoppingMall?.() },
+              { label: t('Campaign Case Studies', 'Veldtog-Gevallestudies'), onSelect: () => onOpenShoppingMall?.() },
+              { label: t('Book Mall Strategy Call', 'Boek ’n Sentrumstrategie-Oproep'), onSelect: () => onOpenShoppingMall?.() },
             ]}
           />
         </div>
@@ -116,10 +119,11 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
 
       {/* Caption strip */}
       <div className="mt-3 text-[10px] sm:text-[11px] font-mono tracking-widest text-gray-500 uppercase text-center lg:text-right">
-        HOVER TO LEAN · ARE YOU A RETAIL STORE OR A SHOPPING MALL? · + TO ADD
+        {t(
+          'HOVER TO LEAN · ARE YOU A RETAIL STORE OR A SHOPPING MALL? · + TO ADD',
+          'HOE OOR LEUN · IS JY ’N WINKEL OF ’N WINKELSENTRUM? · + OM BY TE VOEG'
+        )}
       </div>
     </div>
   );
 };
-
-export default InteractiveFolders;

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { useLanguage } from '../data/language'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js'
@@ -52,6 +53,9 @@ export default function AgenticFactory3D({
   onReady,
 }: AgenticFactory3DProps) {
   const rootRef = useRef< HTMLDivElement>(null)
+  // Re-running the scene on language change re-translates everything the 3D
+  // canvas paints (screens, tooltips, captions) on the next initialization.
+  const { lang } = useLanguage()
   const handlers = useRef({ onStation, onReady })
   useEffect(() => {
     handlers.current = { onStation, onReady }
@@ -68,6 +72,7 @@ export default function AgenticFactory3D({
       dispose = initMachineScene(root, getComputedStyle(root).fontFamily, {
         embedded: embed,
         variant,
+        lang,
         onStation: (id) => handlers.current.onStation?.(id),
         onReady: () => handlers.current.onReady?.(),
       })
@@ -76,7 +81,7 @@ export default function AgenticFactory3D({
       cancelled = true
       dispose?.()
     }
-  }, [embed, variant])
+  }, [embed, variant, lang])
 
   return (
     <div
@@ -88,7 +93,11 @@ export default function AgenticFactory3D({
       <div
         id="scene"
         role="img"
-        aria-label="Interactive 3D machine with five stations: Engine, Admin, Storefront, Cabinet and Checkout. Drag to rotate, scroll or pinch to zoom. Hover or tap a station to take a closer look."
+        aria-label={
+          lang === 'af'
+            ? 'Interaktiewe 3D-masjien met vyf stasies: Enjin, Administrasie, Winkelrak, Kas en Kassa. Sleep om te draai, rol of knyp om in te zoem. Beweeg oor of tik op ’n stasie vir ’n nouer kyk.'
+            : 'Interactive 3D machine with five stations: Engine, Admin, Storefront, Cabinet and Checkout. Drag to rotate, scroll or pinch to zoom. Hover or tap a station to take a closer look.'
+        }
       />
       <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }} aria-hidden="true">
         <defs>
@@ -107,18 +116,18 @@ export default function AgenticFactory3D({
               muted
               loop
               autoPlay
-              poster={SCENE_COPY[variant].journeyMedia[0].image}
+              poster={makeSceneCopy(lang)[variant].journeyMedia[0].image}
               src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
             />
             <img
               id="journey-img"
-              src={SCENE_COPY[variant].journeyMedia[0].image}
-              alt={SCENE_COPY[variant].alt}
+              src={makeSceneCopy(lang)[variant].journeyMedia[0].image}
+              alt={makeSceneCopy(lang)[variant].alt}
             />
             <div className="journey-media-glare" />
             <div className="journey-live-badge">
               <span className="live-dot" />
-              <span>LIVE</span>
+              <span>{lang === 'af' ? 'LEWENDIG' : 'LIVE'}</span>
             </div>
           </div>
           {/* Glowing Neon Rim around the Rounded Triangle */}
@@ -134,11 +143,11 @@ export default function AgenticFactory3D({
         {/* Text with a line: Minimal, editorial, luxury typography */}
         <div className="journey-content">
           <div className="journey-kicker-row">
-            <span id="journey-phase" className="journey-phase">PHASE 01 // 05</span>
-            <span id="journey-tag" className="journey-tag">STRATEGY</span>
+            <span id="journey-phase" className="journey-phase">{lang === 'af' ? 'FASE 01 // 05' : 'PHASE 01 // 05'}</span>
+            <span id="journey-tag" className="journey-tag">{lang === 'af' ? 'STRATEGIE' : 'STRATEGY'}</span>
           </div>
-          <strong id="journey-title">{SCENE_COPY[variant].journeyMedia[0].title}</strong>
-          <p id="journey-detail">{SCENE_COPY[variant].journeyMedia[0].detail}</p>
+          <strong id="journey-title">{makeSceneCopy(lang)[variant].journeyMedia[0].title}</strong>
+          <p id="journey-detail">{makeSceneCopy(lang)[variant].journeyMedia[0].detail}</p>
           <div className="journey-line-track">
             <i id="journey-progress" />
           </div>
@@ -151,12 +160,12 @@ export default function AgenticFactory3D({
       </div>
       <div id="loading">
         <i />
-        <span>Initializing 3D studio</span>
+        <span>{lang === 'af' ? 'Stel 3D-ateljee in staat' : 'Initializing 3D studio'}</span>
       </div>
       <div id="error" role="alert">
-        <strong>Could not start the 3D scene</strong>
-        <p>Check that WebGL is turned on in your browser.</p>
-        <button onClick={() => location.reload()}>Try again</button>
+        <strong>{lang === 'af' ? 'Kon die 3D-toneel nie begin nie' : 'Could not start the 3D scene'}</strong>
+        <p>{lang === 'af' ? 'Maak seker WebGL is aangeskakel in jou blaaier.' : 'Check that WebGL is turned on in your browser.'}</p>
+        <button onClick={() => location.reload()}>{lang === 'af' ? 'Probeer weer' : 'Try again'}</button>
       </div>
     </div>
   )
@@ -196,111 +205,118 @@ declare global {
 // Running-text copy for the journey panel, keyed by page variant.
 // The machine, five stations and all animation are identical between
 // variants — only these captions (plus the idle title) swap out.
-const SCENE_COPY: Record<'retail' | 'mall', {
+// Built per language via makeSceneCopy(lang) so the Afrikaans switch
+// re-translates the running captions without touching anything else.
+type SceneCopy = {
   journeySteps: string[][]
   journeyMedia: { step: string; title: string; tag: string; detail: string; image: string }[]
   idleTitle: string
   idleDetail: string
   alt: string
-}> = {
-  retail: {
-    journeySteps: [
-      ['New retail campaign', 'Promos & seasonal retail order'],
-      ['Copy & leaflets', 'Automated print & digital layout'],
-      ['Video production', '4K product spotlights & motion'],
-      ['Omnichannel rollout', 'Social media, screens & digital hub'],
-      ['Campaign live', 'Print-ready assets delivered'],
-    ],
-    journeyMedia: [
-      {
-        step: '01',
-        title: 'New retail campaign',
-        tag: 'STRATEGY',
-        detail: 'Promos, seasonal briefs & retail orders',
-        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '02',
-        title: 'Copy & leaflets',
-        tag: 'LAYOUT',
-        detail: 'Automated weekly print & digital circulars',
-        image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '03',
-        title: 'Video production',
-        tag: 'MOTION LAB',
-        detail: 'Cinematic 4K food & dynamic motion reels',
-        image: 'https://images.unsplash.com/photo-1506617564039-2f3b650b7010?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '04',
-        title: 'Omnichannel rollout',
-        tag: 'DISPATCH',
-        detail: 'Instagram, TikTok, digital screens & store hub',
-        image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '05',
-        title: 'Campaign live',
-        tag: 'DELIVERED',
-        detail: 'Print-ready circulars & live retail publishing',
-        image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=400&q=80',
-      },
-    ],
-    idleTitle: 'Autonomous Retail Studio',
-    idleDetail: '5-station end-to-end creative assembly',
-    alt: 'Retail pipeline stage visual',
-  },
-  mall: {
-    journeySteps: [
-      ['New mall campaign', 'Tenant promos & seasonal centre briefs'],
-      ['Campaign artwork', 'Automated print & digital centre layouts'],
-      ['Video production', '4K campaign & event spotlights'],
-      ['Omnichannel rollout', 'Social media, screens & centre hub'],
-      ['Campaign live', 'Print-ready assets delivered'],
-    ],
-    journeyMedia: [
-      {
-        step: '01',
-        title: 'New mall campaign',
-        tag: 'STRATEGY',
-        detail: 'Tenant promos, new openings & centre briefs',
-        image: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '02',
-        title: 'Campaign artwork',
-        tag: 'LAYOUT',
-        detail: 'Automated print & digital centre layouts',
-        image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '03',
-        title: 'Video production',
-        tag: 'MOTION LAB',
-        detail: 'Cinematic 4K campaign & event spotlights',
-        image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '04',
-        title: 'Omnichannel rollout',
-        tag: 'DISPATCH',
-        detail: 'Instagram, TikTok, digital screens & centre hub',
-        image: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=400&q=80',
-      },
-      {
-        step: '05',
-        title: 'Campaign live',
-        tag: 'DELIVERED',
-        detail: 'Print-ready assets & live centre publishing',
-        image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=400&q=80',
-      },
-    ],
-    idleTitle: 'Autonomous Mall Studio',
-    idleDetail: '5-station end-to-end creative assembly',
-    alt: 'Mall pipeline stage visual',
-  },
+}
+
+const makeSceneCopy = (lang: 'en' | 'af'): Record<'retail' | 'mall', SceneCopy> => {
+  const L = (en: string, af: string) => (lang === 'af' ? af : en)
+  return {
+    retail: {
+      journeySteps: [
+        [L('New retail campaign', 'Nuwe winkelveldtog'), L('Promos & seasonal retail order', 'Promosies & seisoenale winkelbestelling')],
+        [L('Copy & leaflets', 'Kopie & pamflette'), L('Automated print & digital layout', 'Outomatiese druk- & digitale uitleg')],
+        [L('Video production', 'Videoproduksie'), L('4K product spotlights & motion', '4K-produkhoogtepunte & motion')],
+        [L('Omnichannel rollout', 'Omnichannel-uitrol'), L('Social media, screens & digital hub', 'Sosiale media, skerms & digitale spilpunt')],
+        [L('Campaign live', 'Veldtog lewendig'), L('Print-ready assets delivered', 'Drukgereed bates afgelewer')],
+      ],
+      journeyMedia: [
+        {
+          step: '01',
+          title: L('New retail campaign', 'Nuwe winkelveldtog'),
+          tag: L('STRATEGY', 'STRATEGIE'),
+          detail: L('Promos, seasonal briefs & retail orders', 'Promosies, seisoenale opdragte & winkelbestellings'),
+          image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '02',
+          title: L('Copy & leaflets', 'Kopie & pamflette'),
+          tag: L('LAYOUT', 'UITLEG'),
+          detail: L('Automated weekly print & digital circulars', 'Outomatiese weeklikse druk- & digitale winkelblaaie'),
+          image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '03',
+          title: L('Video production', 'Videoproduksie'),
+          tag: L('MOTION LAB', 'MOTION-LAB'),
+          detail: L('Cinematic 4K food & dynamic motion reels', 'Filmagtige 4K-kos & dinamiese motion reels'),
+          image: 'https://images.unsplash.com/photo-1506617564039-2f3b650b7010?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '04',
+          title: L('Omnichannel rollout', 'Omnichannel-uitrol'),
+          tag: L('DISPATCH', 'VERSENDING'),
+          detail: L('Instagram, TikTok, digital screens & store hub', 'Instagram, TikTok, digitale skerms & winkelspilpunt'),
+          image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '05',
+          title: L('Campaign live', 'Veldtog lewendig'),
+          tag: L('DELIVERED', 'AFGELEWER'),
+          detail: L('Print-ready circulars & live retail publishing', 'Drukgereed winkelblaaie & lewendige winkelpublisering'),
+          image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=400&q=80',
+        },
+      ],
+      idleTitle: L('Autonomous Retail Studio', 'Outonome Winkelateljee'),
+      idleDetail: L('5-station end-to-end creative assembly', 'Vyfstasie-eind-tot-eind kreatiewe montering'),
+      alt: L('Retail pipeline stage visual', 'Winkelpyplyn-stagevisueel'),
+    },
+    mall: {
+      journeySteps: [
+        [L('New mall campaign', 'Nuwe sentrumveldtog'), L('Tenant promos & seasonal centre briefs', 'Huurder-promosies & seisoenale sentrumopdragte')],
+        [L('Campaign artwork', 'Veldtogkunswerk'), L('Automated print & digital centre layouts', 'Outomatiese druk- & digitale sentrumuitlegte')],
+        [L('Video production', 'Videoproduksie'), L('4K campaign & event spotlights', '4K-veldtog- & geleentheidhoogtepunte')],
+        [L('Omnichannel rollout', 'Omnichannel-uitrol'), L('Social media, screens & centre hub', 'Sosiale media, skerms & sentrumspilpunt')],
+        [L('Campaign live', 'Veldtog lewendig'), L('Print-ready assets delivered', 'Drukgereed bates afgelewer')],
+      ],
+      journeyMedia: [
+        {
+          step: '01',
+          title: L('New mall campaign', 'Nuwe sentrumveldtog'),
+          tag: L('STRATEGY', 'STRATEGIE'),
+          detail: L('Tenant promos, new openings & centre briefs', 'Huurder-promosies, nuwe openings & sentrumopdragte'),
+          image: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '02',
+          title: L('Campaign artwork', 'Veldtogkunswerk'),
+          tag: L('LAYOUT', 'UITLEG'),
+          detail: L('Automated print & digital centre layouts', 'Outomatiese druk- & digitale sentrumuitlegte'),
+          image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '03',
+          title: L('Video production', 'Videoproduksie'),
+          tag: L('MOTION LAB', 'MOTION-LAB'),
+          detail: L('Cinematic 4K campaign & event spotlights', 'Filmagtige 4K-veldtog- & geleentheidhoogtepunte'),
+          image: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '04',
+          title: L('Omnichannel rollout', 'Omnichannel-uitrol'),
+          tag: L('DISPATCH', 'VERSENDING'),
+          detail: L('Instagram, TikTok, digital screens & centre hub', 'Instagram, TikTok, digitale skerms & sentrumspilpunt'),
+          image: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=400&q=80',
+        },
+        {
+          step: '05',
+          title: L('Campaign live', 'Veldtog lewendig'),
+          tag: L('DELIVERED', 'AFGELEWER'),
+          detail: L('Print-ready assets & live centre publishing', 'Drukgereed bates & lewendige sentrumpublisering'),
+          image: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=400&q=80',
+        },
+      ],
+      idleTitle: L('Autonomous Mall Studio', 'Outonome Sentrumateljee'),
+      idleDetail: L('5-station end-to-end creative assembly', 'Vyfstasie-eind-tot-eind kreatiewe montering'),
+      alt: L('Mall pipeline stage visual', 'Sentrum pyplyn-stagevisueel'),
+    },
+  }
 }
 
 export type MachineSceneOptions = {
@@ -308,6 +324,8 @@ export type MachineSceneOptions = {
   embedded: boolean
   /** Copy voice carried through to the running journey captions. */
   variant?: 'retail' | 'mall'
+  /** Site language ('en' default | 'af') — shapes every caption the scene paints. */
+  lang?: 'en' | 'af'
   onStation?: (id: StationId) => void
   onReady?: () => void
 }
@@ -318,6 +336,10 @@ function initMachineScene(
   options: MachineSceneOptions
 ): () => void {
   const cleanups: Array<() => void> = []
+  // Site language for every user-visible string inside the scene. `t` mirrors
+  // the site-wide inline pair translate (see src/data/language.tsx).
+  const sceneLang = options.lang ?? 'en'
+  const tr = (en: string, af: string) => (sceneLang === 'af' ? af : en)
   // The component sizes the scene to its own box; the template filled the window.
   const frameWidth = () => root.clientWidth
   const frameHeight = () => root.clientHeight
@@ -358,7 +380,10 @@ function initMachineScene(
       })
     } catch (e) {
       showError(
-        'WebGL is not available. Turn on hardware acceleration in your browser settings and reload the page.'
+        tr(
+          'WebGL is not available. Turn on hardware acceleration in your browser settings and reload the page.',
+          'WebGL is nie beskikbaar nie. Skakel hardewareversnelling in jou blaaierinstellings aan en laai die bladsy weer.'
+        )
       )
       throw e
     }
@@ -619,9 +644,9 @@ function initMachineScene(
       c.strokeStyle = '#4d545c'
       c.lineWidth = 2
       c.strokeRect(2, 2, w - 4, h - 4)
-      print(c, 'STARTER', 45, 79, 40, '#d9d8cd', 650)
-      print(c, '·  site  ·  database  ·  admin in 35 minutes', 285, 79, 34, '#b8bdc1', 450)
-      print(c, 'AGENTIC ENGINEERING    /    YOUR FIRST PRODUCT', 47, 133, 19, '#737e88', 500)
+      print(c, tr('STARTER', 'AANVANGERS'), 45, 79, 40, '#d9d8cd', 650)
+      print(c, tr('·  site  ·  database  ·  admin in 35 minutes', '·  werf  ·  databasis  ·  admin in 35 minute'), 285, 79, 34, '#b8bdc1', 450)
+      print(c, tr('AGENTIC ENGINEERING    /    YOUR FIRST PRODUCT', 'AGENTIESE INGENIEURSWES    /    JOU EERSTE PRODUK'), 47, 133, 19, '#737e88', 500)
       print(c, 'No. 001', 1360, 130, 23, '#c57e45')
     })
     const plate = screen(machine, 7.35, 0.84, -0.4, 0.25, 3.51, engraving)
@@ -680,43 +705,43 @@ function initMachineScene(
     const definitions: StationDef[] = [
       {
         id: 'engine',
-        name: 'Engine',
+        name: tr('Engine', 'Enjin'),
         step: 2,
         output: 'script',
         pos: [-4.15, 0.29, -0.65],
-        desc: 'Script, voice, subtitles, and a finished video.',
+        desc: tr('Script, voice, subtitles, and a finished video.', 'Draaiboek, stem, onderskrifte en ’n voltooide video.'),
       },
       {
         id: 'admin',
-        name: 'Admin',
+        name: tr('Admin', 'Administrasie'),
         step: 3,
         output: 'video',
         pos: [-1.65, 0.29, -2.03],
-        desc: 'The video queue and control over the whole system.',
+        desc: tr('The video queue and control over the whole system.', 'Die videowaglys en beheer oor die hele stelsel.'),
       },
       {
         id: 'storefront',
-        name: 'Storefront',
+        name: tr('Storefront', 'Winkelrak'),
         step: 4,
         output: 'post',
         pos: [1.5, 0.29, -2.08],
-        desc: 'The finished video becomes part of the product.',
+        desc: tr('The finished video becomes part of the product.', 'Die voltooide video word deel van die produk.'),
       },
       {
         id: 'cabinet',
-        name: 'Cabinet',
+        name: tr('Cabinet', 'Kas'),
         step: 1,
         output: 'order',
         pos: [4.03, 0.29, 0.12],
-        desc: 'Customers, new orders and the work history.',
+        desc: tr('Customers, new orders and the work history.', 'Kliënte, nuwe bestellings en die werkgeskiedenis.'),
       },
       {
         id: 'cashdesk',
-        name: 'Checkout',
+        name: tr('Checkout', 'Kassa'),
         step: 5,
         output: 'payment',
         pos: [0.93, 0.29, 1.85],
-        desc: 'Payment received. Receipt printed. The machine runs.',
+        desc: tr('Payment received. Receipt printed. The machine runs.', 'Betaling ontvang. Kwitansie gedruk. Die masjien loop.'),
       },
     ]
     const stations: Station[] = [],
@@ -797,7 +822,7 @@ function initMachineScene(
       screen(group, 1.54, 0.345, 0, 0.27, 0.891, plaque)
       const label = document.createElement('div')
       label.className = 'station-label'
-      label.innerHTML = `<div class="stem"></div><div class="label-card"><div class="label-title"><span>${String(i + 1).padStart(2, '0')}</span>${d.name}</div><div class="label-meta">Step ${d.step} · ${d.output}</div></div>`
+      label.innerHTML = `<div class="stem"></div><div class="label-card"><div class="label-title"><span>${String(i + 1).padStart(2, '0')}</span>${d.name}</div><div class="label-meta">${tr('Step', 'Stap')} ${d.step} · ${({ script: tr('Script', 'Draaiboek'), video: tr('Video', 'Video'), post: tr('Post', 'Plasing'), order: tr('Order', 'Bestelling'), payment: tr('Payment', 'Betaling') }[d.output] ?? d.output)}</div></div>`
       $('labels').appendChild(label)
       cleanups.push(() => label.remove())
 
@@ -900,13 +925,18 @@ function initMachineScene(
         c.ellipse(194, 270, 90 - i * 21, 111, Math.sin(t * 0.25) * 0.3 + 0.4, 0, TAU)
         c.stroke()
       }
-      print(c, 'MADE', 28, 57, 24, '#242320', 650)
-      print(c, 'BY YOU.', 24, 103, 42, '#242320', 700)
+      print(c, tr('MADE', 'GEMAAK'), 28, 57, 24, '#242320', 650)
+      print(c, tr('BY YOU.', 'DEUR JOU.'), 24, 103, 42, '#242320', 700)
       c.fillStyle = '#171b20'
       c.beginPath()
       c.roundRect(25, 465, 334, 123, 12)
       c.fill()
-      const texts = ['From an idea —', 'to a real product.', 'Your agent', 'is already at work.']
+      const texts = [
+        tr('From an idea —', 'Vanaf ’n idee —'),
+        tr('to a real product.', 'tot ’n regte produk.'),
+        tr('Your agent', 'Jou agent'),
+        tr('is already at work.', 'is reeds aan die werk.'),
+      ]
       const n = Math.floor(t * 0.7) % 4
       print(c, texts[n], 45, 505, 25, '#f4f1ea', 550)
       print(c, texts[(n + 1) % 4], 45, 547, 25, '#f4f1ea', 550)
@@ -940,7 +970,7 @@ function initMachineScene(
       const c = queue.ctx
       c.fillStyle = '#111b20'
       c.fillRect(0, 0, 640, 340)
-      print(c, 'VIDEO QUEUE', 25, 45, 21, '#acb9b8', 550)
+      print(c, tr('VIDEO QUEUE', 'VIDEOWAGLYS'), 25, 45, 21, '#acb9b8', 550)
       print(c, '03 / 08', 497, 45, 20, '#ff7a1a', 500)
       for (let i = 0; i < 3; i++) {
         const y = 74 + i * 76
@@ -952,13 +982,17 @@ function initMachineScene(
         c.fillRect(34, y + 10, 27, 41)
         print(
           c,
-          ['Product overview', 'Brand story', 'New collection'][i],
+          [
+            tr('Product overview', 'Produkoorsig'),
+            tr('Brand story', 'Handelsmerkverhaal'),
+            tr('New collection', 'Nuwe versameling'),
+          ][i],
           77,
           y + 29,
           19,
           '#d4d8cc'
         )
-        print(c, i === 0 ? 'RENDERING' : 'QUEUED', 77, y + 49, 11, i === 0 ? '#c57e45' : '#81948f')
+        print(c, i === 0 ? tr('RENDERING', 'RENDER') : tr('QUEUED', 'IN RY'), 77, y + 49, 11, i === 0 ? '#c57e45' : '#81948f')
         c.fillStyle = '#334348'
         c.fillRect(377, y + 26, 214, 7)
         c.fillStyle = i === 0 ? '#ff7a1a' : '#607475'
@@ -999,8 +1033,8 @@ function initMachineScene(
         c.arc(26 + i * 19, 27, 4, 0, TAU)
         c.fill()
       }
-      print(c, 'YOUR PRODUCT', 33, 100, 22, '#22282b', 650)
-      print(c, 'Home    Catalog    Account', 535, 98, 14, '#6a7271')
+      print(c, tr('YOUR PRODUCT', 'JOU PRODUK'), 33, 100, 22, '#22282b', 650)
+      print(c, tr('Home    Catalog    Account', 'Tuis    Katalogus    Rekening'), 535, 98, 14, '#6a7271')
       c.fillStyle = '#ff7a1a'
       c.beginPath()
       c.roundRect(32, 131, 287, 401, 10)
@@ -1012,12 +1046,12 @@ function initMachineScene(
         c.ellipse(175, 320, 75 - i * 17, 94, 0.4, 0, TAU)
         c.stroke()
       }
-      print(c, 'FROM IDEA', 52, 181, 29, '#242827', 700)
-      print(c, 'TO PRODUCT.', 52, 220, 29, '#242827', 700)
-      print(c, 'Your idea.', 359, 197, 41, '#22282b', 600)
-      print(c, 'Already live.', 359, 252, 41, '#22282b', 600)
-      print(c, 'A video that tells people', 362, 300, 19, '#77807b')
-      print(c, 'what matters most.', 362, 329, 19, '#77807b')
+      print(c, tr('FROM IDEA', 'VANAF IDEE'), 52, 181, 29, '#242827', 700)
+      print(c, tr('TO PRODUCT.', 'TOT PRODUK.'), 52, 220, 29, '#242827', 700)
+      print(c, tr('Your idea.', 'Jou idee.'), 359, 197, 41, '#22282b', 600)
+      print(c, tr('Already live.', 'Reeds lewendig.'), 359, 252, 41, '#22282b', 600)
+      print(c, tr('A video that tells people', '’n Video wat mense vertel'), 362, 300, 19, '#77807b')
+      print(c, tr('what matters most.', 'wat die meeste saakmaak.'), 362, 329, 19, '#77807b')
       for (let i = 0; i < 3; i++) {
         c.fillStyle = '#d1d5cd'
         c.fillRect(362, 363 + i * 16, 400 - i * 43, 5)
@@ -1026,8 +1060,8 @@ function initMachineScene(
       c.beginPath()
       c.roundRect(359, 447, 279, 62, 7)
       c.fill()
-      print(c, 'Order a video  ↗', 390, 486, 22, '#f4f1ea', 500)
-      print(c, 'BUILT BY YOUR AGENTS', 33, 571, 12, '#879088')
+      print(c, tr('Order a video  ↗', 'Bestel ’n video  ↗'), 390, 486, 22, '#f4f1ea', 500)
+      print(c, tr('BUILT BY YOUR AGENTS', 'GEBOU DEUR JOU AGENTE'), 33, 571, 12, '#879088')
     })
     screen(storefront, 2.16, 1.43, 0, 1.95, 0.011, webTexture)
     ball(storefront, 0.024, 0, 2.747, -0.05, M.dark)
@@ -1048,7 +1082,7 @@ function initMachineScene(
       c.lineTo(140, 100)
       c.lineTo(94, 134)
       c.fill()
-      print(c, 'CHANNEL', 17, 225, 23, '#283030', 600)
+      print(c, tr('CHANNEL', 'KANAAL'), 17, 225, 23, '#283030', 600)
       c.fillStyle = '#b0b5b0'
       c.fillRect(17, 244, 153, 6)
       c.fillRect(17, 258, 104, 5)
@@ -1062,8 +1096,8 @@ function initMachineScene(
     const orderTex = canvasTexture(480, 460, (c, w, h) => {
       c.fillStyle = '#172224'
       c.fillRect(0, 0, w, h)
-      print(c, 'YOUR ORDERS', 30, 51, 27, '#e8e8d8', 550)
-      print(c, 'Today · 3 new', 30, 81, 16, '#869991')
+      print(c, tr('YOUR ORDERS', 'JOU BESTELLINGS'), 30, 51, 27, '#e8e8d8', 550)
+      print(c, tr('Today · 3 new', 'Vandag · 3 nuut'), 30, 81, 16, '#869991')
       ;['Anna', 'Michael', 'Maria'].forEach((n, i) => {
         const y = 110 + i * 100
         c.fillStyle = '#283839'
@@ -1076,7 +1110,7 @@ function initMachineScene(
         c.fill()
         print(c, n[0], 49, y + 47, 20, '#1b2828', 600)
         print(c, n, 93, y + 33, 23, '#e6e8dc', 550)
-        print(c, ['New order', 'In production', 'Video ready'][i], 93, y + 58, 15, '#94a59b')
+        print(c, [tr('New order', 'Nuwe bestelling'), tr('In production', 'In produksie'), tr('Video ready', 'Video gereed')][i], 93, y + 58, 15, '#94a59b')
         print(c, '↗', 410, y + 49, 25, '#c57e45')
       })
     })
@@ -1108,7 +1142,7 @@ function initMachineScene(
       c.fill()
       print(c, 'A', 42, 112, 34, '#ff7a1a', 550)
       print(c, 'Anna', 108, 91, 38, '#222822', 600)
-      print(c, 'New order  +', 108, 138, 23, '#5b4c22', 500)
+      print(c, tr('New order  +', 'Nuwe bestelling  +'), 108, 138, 23, '#5b4c22', 500)
     })
     screen(incoming, 0.82, 0.39, 0, 0, 0.026, nameTex)
 
@@ -1140,7 +1174,7 @@ function initMachineScene(
       const c = cashTex.ctx
       c.fillStyle = '#12231e'
       c.fillRect(0, 0, 512, 176)
-      print(c, 'PAYMENT RECEIVED', 22, 44, 23, '#9cae91', 500)
+      print(c, tr('PAYMENT RECEIVED', 'BETALING ONTVANG'), 22, 44, 23, '#9cae91', 500)
       print(c, '+ $29', 26, 131, 66, '#ecedc7', 500)
     }
     drawCash()
@@ -1152,18 +1186,18 @@ function initMachineScene(
     const receiptTex = canvasTexture(280, 540, (c, w, h) => {
       c.fillStyle = '#f4f1ea'
       c.fillRect(0, 0, w, h)
-      print(c, 'YOUR PRODUCT', 25, 52, 24, '#333d36', 650)
-      print(c, 'SALES RECEIPT', 32, 87, 19, '#566059')
+      print(c, tr('YOUR PRODUCT', 'JOU PRODUK'), 25, 52, 24, '#333d36', 650)
+      print(c, tr('SALES RECEIPT', 'VERKOOPKWITANSIE'), 32, 87, 19, '#566059')
       c.strokeStyle = '#8a9189'
       c.setLineDash([5, 6])
       c.beginPath()
       c.moveTo(22, 115)
       c.lineTo(258, 115)
       c.stroke()
-      print(c, 'Video', 25, 154, 22, '#333d36')
+      print(c, tr('Video', 'Video'), 25, 154, 22, '#333d36')
       print(c, '1 × $29', 25, 190, 21, '#333d36')
-      print(c, 'PAID', 25, 263, 31, '#333d36', 650)
-      print(c, 'Thank you!', 25, 317, 24, '#687067')
+      print(c, tr('PAID', 'BETAAL'), 25, 263, 31, '#333d36', 650)
+      print(c, tr('Thank you!', 'Dankie!'), 25, 317, 24, '#687067')
       for (let i = 0; i < 44; i++) {
         c.fillStyle = '#333d36'
         c.fillRect(25 + i * 5, 370, 1 + (i % 3), 83)
@@ -1279,19 +1313,19 @@ function initMachineScene(
     const scriptTex = canvasTexture(256, 352, (c, w, h) => {
       c.fillStyle = '#eeeae0'
       c.fillRect(0, 0, w, h)
-      print(c, 'SCRIPT', 24, 47, 22, '#3b403a', 650)
-      print(c, '01 / Opening', 24, 85, 15, '#8b8d80')
+      print(c, tr('SCRIPT', 'DRAAIBOEK'), 24, 47, 22, '#3b403a', 650)
+      print(c, tr('01 / Opening', '01 / Opening'), 24, 85, 15, '#8b8d80')
       for (let i = 0; i < 9; i++) {
         c.fillStyle = i === 4 ? '#c57e45' : '#aeb2a5'
         c.fillRect(24, 111 + i * 21, 190 - (i % 3) * 24, 6)
       }
-      print(c, 'DONE  ✓', 24, 327, 17, '#786124', 600)
+      print(c, tr('DONE  ✓', 'KLAAR  ✓'), 24, 327, 17, '#786124', 600)
     })
     const orderCardTex = canvasTexture(256, 352, (c, w, h) => {
       c.fillStyle = '#c57e45'
       c.fillRect(0, 0, w, h)
-      print(c, 'NEW', 21, 48, 24, '#30362d', 650)
-      print(c, 'ORDER', 21, 79, 24, '#30362d', 650)
+      print(c, tr('NEW', 'NUWE'), 21, 48, 24, '#30362d', 650)
+      print(c, tr('ORDER', 'BESTELLING'), 21, 79, 24, '#30362d', 650)
       c.strokeStyle = '#716431'
       c.lineWidth = 2
       c.strokeRect(23, 112, 210, 139)
@@ -1561,7 +1595,7 @@ function initMachineScene(
     function syncPlayback() {
       const b = $('play')
       if (b) {
-        b.setAttribute('aria-label', playing ? 'Pause the animation' : 'Resume the animation')
+        b.setAttribute('aria-label', playing ? tr('Pause the animation', 'Laat die animasie wag') : tr('Resume the animation', 'Hervat die animasie'))
         b.setAttribute('aria-pressed', String(!playing))
         b.innerHTML = playing
           ? '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><rect x="2" y="1" width="2.5" height="10" rx=".5"/><rect x="7.5" y="1" width="2.5" height="10" rx=".5"/></svg>'
@@ -1570,7 +1604,7 @@ function initMachineScene(
       const st = $('status')
       if (st) st.classList.toggle('paused', !playing)
       const stText = $('status-text')
-      if (stText) stText.textContent = playing ? 'Machine running' : 'Machine paused'
+      if (stText) stText.textContent = playing ? tr('Machine running', 'Masjien loop') : tr('Machine paused', 'Masjien wag')
     }
     function play() {
       playing = true
@@ -1699,7 +1733,10 @@ function initMachineScene(
       e.preventDefault()
       contextLost = true
       showError(
-        'The graphics context was interrupted. The scene comes back on its own once WebGL is available again.'
+        tr(
+          'The graphics context was interrupted. The scene comes back on its own once WebGL is available again.',
+          'Die grafiese konteks is onderbreek. Die toneel kom vanself terug sodra WebGL weer beskikbaar is.'
+        )
       )
     })
     listen(renderer.domElement, 'webglcontextrestored', () => {
@@ -1710,7 +1747,7 @@ function initMachineScene(
 
     const scratch = new THREE.Vector3(),
       anchor = new THREE.Vector3()
-    const sceneCopy = SCENE_COPY[options.variant ?? 'retail']
+    const sceneCopy = makeSceneCopy(sceneLang)[options.variant ?? 'retail']
     const journeySteps = sceneCopy.journeySteps
     const journeyMedia = sceneCopy.journeyMedia
     let prevJourney = -1,
@@ -1825,7 +1862,7 @@ function initMachineScene(
             step: `0${step + 1}`,
             title: journeySteps[step]?.[0] ?? sceneCopy.idleTitle,
             tag: 'RUNNING',
-            detail: journeySteps[step]?.[1] ?? 'Order processing',
+            detail: journeySteps[step]?.[1] ?? tr('Order processing', 'Bestelling word verwerk'),
             image: '',
           }
           const tEl = $('journey-title')
@@ -1833,7 +1870,7 @@ function initMachineScene(
           const dEl = $('journey-detail')
           if (dEl) dEl.textContent = item.detail
           const pPhase = $('journey-phase')
-          if (pPhase) pPhase.textContent = `PHASE 0${step + 1} // 05`
+          if (pPhase) pPhase.textContent = `${tr('PHASE', 'FASE')} 0${step + 1} // 05`
           const pTag = $('journey-tag')
           if (pTag) pTag.textContent = item.tag
           const imgEl = root.querySelector<HTMLImageElement>('#journey-img')
@@ -1862,9 +1899,9 @@ function initMachineScene(
           const dEl = $('journey-detail')
           if (dEl) dEl.textContent = sceneCopy.idleDetail
           const pPhase = $('journey-phase')
-          if (pPhase) pPhase.textContent = 'LIVE PIPELINE'
+          if (pPhase) pPhase.textContent = tr('LIVE PIPELINE', 'LEWENDE PYPLYN')
           const pTag = $('journey-tag')
-          if (pTag) pTag.textContent = 'CONTINUOUS'
+          if (pTag) pTag.textContent = tr('CONTINUOUS', 'DEURLOPEND')
           const imgEl = root.querySelector<HTMLImageElement>('#journey-img')
           if (imgEl && journeyMedia[0]?.image) {
             imgEl.src = journeyMedia[0].image
