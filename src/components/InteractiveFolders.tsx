@@ -63,7 +63,7 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
       {/* Folders Container Row */}
       <div className="flex flex-wrap sm:flex-nowrap items-end justify-center lg:justify-end gap-5 sm:gap-7 pt-8 sm:pt-10 pb-2">
         {/* FOLDER 1: "I'm a retail store" (Milk Glass, Glacier art, + add button) */}
-        <div className="relative group">
+        <div className="relative group" data-voice-pulse>
           <GlassFolder
             label={t("I'm a retail store", 'Ek is ’n winkel')}
             meta={
@@ -89,7 +89,7 @@ export const InteractiveFolders: React.FC<InteractiveFoldersProps> = ({ onOpenRe
         </div>
 
         {/* FOLDER 2: "I'm a shopping mall" (Smoked Glass, Ember art, ··· more button) */}
-        <div className="relative group">
+        <div className="relative group" data-voice-pulse>
           <GlassFolder
             label={t("I'm a shopping mall", 'Ek is ’n winkelsentrum')}
             meta={

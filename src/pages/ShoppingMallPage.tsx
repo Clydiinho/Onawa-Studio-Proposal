@@ -4,7 +4,7 @@ import AgenticFactory3D from '../components/AgenticFactory3D';
 import LineSidebar from '../components/LineSidebar';
 import { WHATSAPP_NUMBER } from '../data/config';
 import { useLanguage } from '../data/language';
-import VoiceGuide from '../components/VoiceGuide';
+import VoicePresentation from '../components/VoicePresentation';
 import { mall } from '../lib/voiceScripts';
 import {
   Tag, Film, Share2, Zap,
@@ -456,7 +456,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
   return (
     <div className="relative min-h-screen text-[#1c1c1e] selection:bg-[#ccff00] selection:text-black overflow-x-hidden">
       {/* Voice guide — scroll-triggered narrated tour (fixed bottom-left widget) */}
-      <VoiceGuide script={mall} assetPrefix="mall" />
+      <VoicePresentation page="mall" script={mall} />
 
       {/* =========================================================================
           BACKGROUND — the same white shader as the landing page (single shared

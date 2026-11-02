@@ -11,7 +11,7 @@ import { PillNav } from './components/PillNav';
 import { RetailStorePage } from './pages/RetailStorePage';
 import { ShoppingMallPage } from './pages/ShoppingMallPage';
 import { LanguageProvider, useLanguage } from './data/language';
-import VoiceGuide from './components/VoiceGuide';
+import VoicePresentation from './components/VoicePresentation';
 import { home } from './lib/voiceScripts';
 
 export type ProposalPage = 'home' | 'retail-store' | 'shopping-mall';
@@ -156,10 +156,12 @@ function SiteContent() {
         <ShoppingMallPage onNavigate={navigateTo} />
       ) : (
     <div className="min-h-screen bg-[#EFEFEF] text-gray-900 selection:bg-gray-900 selection:text-white font-sans antialiased text-base leading-[1.5]">
-      {/* Voice guide — greets on landing, then points at the folder options
-          (retail store / shopping mall). Falls back to TAP TO HEAR if the
-          browser blocks auto-play sound on a first, gestureless visit. */}
-      <VoiceGuide script={home} assetPrefix="home" autoStart />
+      {/* Voice presentation — static pre-generated narration; the site-wide
+          EN/AF toggle drives the language. The welcome auto-attempts on
+          landing, with a discreet START PRESENTATION fallback if the browser
+          blocks gestureless autoplay. The two folder cards pulse only while
+          the welcome is speaking. */}
+      <VoicePresentation page="home" script={home} autoStart pulseSelector="[data-voice-pulse]" />
       {/* =========================================================================
           SECTION 1: HERO (Full viewport height)
       ========================================================================= */}
