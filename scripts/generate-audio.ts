@@ -68,23 +68,37 @@ const FORCE = process.argv.includes('--force');
 const SAMPLE = process.argv.includes('--sample');
 const LIST_VOICES = process.argv.includes('--list-voices');
 
-const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+/**
+ * API keys, most preferred first. Free-tier daily quota attaches to each Google
+ * PROJECT, so an extra key created in a second AI Studio project carries its
+ * own daily allowance for the SAME model and voices. Rotation is always loud:
+ * every switch is announced in the log, never silent.
+ */
+const apiKeys = [
+  process.env.GOOGLE_API_KEY,
+  process.env.GOOGLE_API_KEY_2,
+  process.env.GOOGLE_API_KEY_3,
+  process.env.GEMINI_API_KEY,
+  process.env.GEMINI_API_KEY_2,
+].filter((k): k is string => Boolean(k?.trim()));
+let keyIndex = 0;
 const model = process.env.GOOGLE_MODEL?.trim() || TTS_MODEL;
 const voiceFor: Record<'en' | 'af', VoicePersona> = {
   en: process.env.GOOGLE_VOICE_EN ? { ...VOICE_EN, voice: process.env.GOOGLE_VOICE_EN.trim() } : VOICE_EN,
   af: process.env.GOOGLE_VOICE_AF ? { ...VOICE_AF, voice: process.env.GOOGLE_VOICE_AF.trim() } : VOICE_AF,
 };
 
-function requireKey(): string {
-  if (!apiKey) {
+function requireKey(): void {
+  if (apiKeys.length === 0) {
     console.error(
       'GOOGLE_API_KEY missing — create a local .env (gitignored) with\n' +
         '  GOOGLE_API_KEY=<key from aistudio.google.com/api-keys>\n' +
-        'and re-run. No key, no generation.'
+        'Optional extra keys (each from a separate Google project, each with its\n' +
+        'own daily free quota): GOOGLE_API_KEY_2, GOOGLE_API_KEY_3.\n' +
+        'No key, no generation.'
     );
     process.exit(1);
   }
-  return apiKey;
 }
 
 /** Detect quota exhaustion so we STOP with a clear error instead of limping on. */
@@ -137,8 +151,8 @@ function pcmToMp3(pcm: Buffer, sampleRate: number): Buffer {
 }
 
 /** One Gemini TTS request → MP3 bytes. Pure generation, no file IO. */
-async function generateLine(text: string, persona: VoicePersona): Promise<Buffer> {
-  const ai = new GoogleGenAI({ apiKey });
+async function generateLine(text: string, persona: VoicePersona, key: string): Promise<Buffer> {
+  const ai = new GoogleGenAI({ apiKey: key });
   // Legacy TTS models (e.g. 3.1 preview) reject speech_metadata; only the
   // 3.8 family accepts turn-level style control.
   const supportsStyle = !/3\.1|2\.5/.test(model);
@@ -179,7 +193,7 @@ interface Job {
 /* ── --list-voices: real casting data (no guessing) ────────────────────────── */
 async function listVoices(): Promise<void> {
   requireKey();
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey: apiKeys[0] });
   for (const query of [
     { lang: 'en', title: 'ENGLISH — female candidates' },
     { lang: 'af', title: 'AFRIKAANS — male candidates' },
@@ -271,30 +285,50 @@ async function run(): Promise<void> {
   }
 
   console.log(`Generating ${pending.length} file(s) with ${model}...`);
+  console.log(
+    `Keys available: ${apiKeys.length} (daily quota is per Google project; ` +
+      'switches are announced here, never silent).'
+  );
   let generated = 0;
   let failed = 0;
 
   for (const job of pending) {
     const dir = SAMPLE ? SAMPLES_DIR_REL : AUDIO_DIR_REL[job.lang];
     const absPath = join(dir, job.file);
-    try {
-      mkdirSync(dir, { recursive: true });
-      const mp3 = await generateLine(job.text, job.persona);
-      writeFileSync(absPath, mp3);
-      generated++;
-      console.log(`✓ ${job.file}  ${(mp3.length / 1024).toFixed(0)} KB  [${job.persona.voice}]`);
-    } catch (err) {
-      if (isQuotaError(err)) {
-        console.error(`\n✗ FREE QUOTA EXHAUSTED while generating ${job.file}.`);
-        console.error(String(err).slice(0, 400));
-        console.error(
-          'Generation stopped on purpose. Committed audio keeps playing for every visitor; ' +
-            're-run npm run voice:generate later (existing files are skipped, so it resumes).'
-        );
-        process.exit(1);
+    mkdirSync(dir, { recursive: true });
+
+    // Retry loop: on quota exhaustion on the current key, rotate to the next
+    // key (each key = its own project = its own daily free allowance) and
+    // retry THIS file. Stop loudly when every key is drained.
+    for (;;) {
+      try {
+        const mp3 = await generateLine(job.text, job.persona, apiKeys[keyIndex]);
+        writeFileSync(absPath, mp3);
+        generated++;
+        console.log(`✓ ${job.file}  ${(mp3.length / 1024).toFixed(0)} KB  [${job.persona.voice}]`);
+        break;
+      } catch (err) {
+        if (isQuotaError(err) && keyIndex < apiKeys.length - 1) {
+          keyIndex++;
+          console.log(
+            `\n→ Daily cap reached on key #${keyIndex}. Switching to key #${keyIndex + 1} ` +
+              `(own project, same model ${model}, same voices). Retrying ${job.file}...`
+          );
+          continue;
+        }
+        if (isQuotaError(err)) {
+          console.error(`\n✗ FREE QUOTA EXHAUSTED on ALL ${apiKeys.length} key(s) while generating ${job.file}.`);
+          console.error(String(err).slice(0, 400));
+          console.error(
+            'Generation stopped on purpose. Committed audio keeps playing for every visitor; ' +
+              're-run npm run voice:generate later (existing files are skipped, so it resumes).'
+          );
+          process.exit(1);
+        }
+        failed++;
+        console.error(`\n✗ ${job.file} — ${String(err).slice(0, 400)}`);
+        break;
       }
-      failed++;
-      console.error(`\n✗ ${job.file} — ${String(err).slice(0, 400)}`);
     }
     // Pace the free-tier requests; TTS models have low per-minute limits.
     await new Promise((r) => setTimeout(r, 800));
