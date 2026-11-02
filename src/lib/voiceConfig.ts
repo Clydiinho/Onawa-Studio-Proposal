@@ -43,15 +43,15 @@ export interface VoicePersona {
 }
 
 export const VOICE_EN: VoicePersona = {
-  voice: 'Kore',
+  voice: 'en-za-training-6',
   style: 'warm, friendly and confident, conversational and lightly playful — a charming young presenter, not theatrical',
-  label: 'English — young, warm, conversational female (African English persona)',
+  label: 'English — 25yo Cape Town English female, young/warm/soothing presenter (Extended Library en-za-training-6)',
 };
 
 export const VOICE_AF: VoicePersona = {
-  voice: 'Sulafat',
+  voice: 'nl-nl-assistant-3',
   style: 'warm, relaxed and friendly, natural conversational Afrikaans — clear pronunciation, no newsreader formality',
-  label: 'Afrikaans — warm, youthful, natural male',
+  label: 'Afrikaans — youthful Dutch-branch male rendering native-family Afrikaans (Extended Library nl-nl-assistant-3)',
 };
 
 /** Committed audio asset layout: /public/audio/<folder>/<page>-<lineId>.mp3 */

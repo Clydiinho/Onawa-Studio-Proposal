@@ -69,6 +69,7 @@ const SAMPLE = process.argv.includes('--sample');
 const LIST_VOICES = process.argv.includes('--list-voices');
 
 const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+const model = process.env.GOOGLE_MODEL?.trim() || TTS_MODEL;
 const voiceFor: Record<'en' | 'af', VoicePersona> = {
   en: process.env.GOOGLE_VOICE_EN ? { ...VOICE_EN, voice: process.env.GOOGLE_VOICE_EN.trim() } : VOICE_EN,
   af: process.env.GOOGLE_VOICE_AF ? { ...VOICE_AF, voice: process.env.GOOGLE_VOICE_AF.trim() } : VOICE_AF,
@@ -138,8 +139,11 @@ function pcmToMp3(pcm: Buffer, sampleRate: number): Buffer {
 /** One Gemini TTS request → MP3 bytes. Pure generation, no file IO. */
 async function generateLine(text: string, persona: VoicePersona): Promise<Buffer> {
   const ai = new GoogleGenAI({ apiKey });
+  // Legacy TTS models (e.g. 3.1 preview) reject speech_metadata; only the
+  // 3.8 family accepts turn-level style control.
+  const supportsStyle = !/3\.1|2\.5/.test(model);
   const interaction = await ai.interactions.create({
-    model: TTS_MODEL,
+    model,
     input: [
       {
         type: 'user_input',
@@ -147,7 +151,9 @@ async function generateLine(text: string, persona: VoicePersona): Promise<Buffer
           {
             type: 'text',
             text,
-            annotations: [{ type: 'speech_metadata', style: persona.style }],
+            ...(supportsStyle
+              ? { annotations: [{ type: 'speech_metadata', style: persona.style }] }
+              : {}),
           },
         ],
       },
@@ -214,9 +220,12 @@ function fullJobs(): Job[] {
       const intro = lang === 'af' ? script.introAf : script.introEn;
       const lines = lang === 'af' ? script.af : script.en;
       // A language whose narration copy is not yet written is simply skipped —
-      // the site handles the missing assets gracefully.
-      if (lines.length === 0) continue;
-      if (intro.trim().length > 0) {
+      // the site handles the missing assets gracefully. Note: intro-only pages
+      // (home) have empty `lines` but a real intro — never drop those.
+      const hasNarration = lines.length > 0;
+      const hasIntro = intro.trim().length > 0;
+      if (!hasNarration && !hasIntro) continue;
+      if (hasIntro) {
         jobs.push({
           file: `${page}-intro-${lang}.mp3`,
           text: intro,
@@ -261,7 +270,7 @@ async function run(): Promise<void> {
     return;
   }
 
-  console.log(`Generating ${pending.length} file(s) with ${TTS_MODEL}...`);
+  console.log(`Generating ${pending.length} file(s) with ${model}...`);
   let generated = 0;
   let failed = 0;
 
@@ -300,3 +309,5 @@ async function run(): Promise<void> {
 }
 
 await run();
+
+

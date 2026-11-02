@@ -38,12 +38,11 @@ export const retail: Script = {
     { id: 'next-steps', label: 'Next Steps', text: "And that's the whole story. When you're ready, tap the WhatsApp button and send us one message about your store — we take it from there and show you exactly how we'd start. We're looking forward to hearing from you." },
   ],
   af: [
-    // FILL WHEN THE AFRIKAANS NARRATION IS APPROVED (same ids as en):
-    // { id: 'problem', label: 'Die Werklikheid', text: "..." },
-    // { id: 'solution', label: 'Die Oplossing', text: "..." },
-    // { id: 'proof', label: 'Die Bewys', text: "..." },
-    // { id: 'offers', label: 'Die Pakette', text: "..." },
-    // { id: 'next-steps', label: 'Volgende Stappe', text: "..." },
+    { id: 'problem', label: 'Die Werklikheid', text: "Die werklikheid: jou spesiale, pamflette en sosiale bladsye hou nooit op om werk te nodig nie. Jy verkoop die ware — om die ontwerp te skep is die ekstra skof wat niemand onderteken het nie." },
+    { id: 'solution', label: 'Die Oplossing', text: "So word ons jou kreatiewe departement. Promosies, digitale pamflette, vier-K-motionreels en sosiale publisering — elke week vir jou gedoen, sonder om iemand nuut aan te stel." },
+    { id: 'proof', label: 'Die Bewys', text: "Dit is die gehalte waarvoor jy inskryf: werklike-wêreld-stylplasings oor Facebook, Instagram, TikTok en WhatsApp — die soort inhoud wat mense laat stilhou en jou spesiale raaksien." },
+    { id: 'offers', label: 'Die Pakette', text: "Drie planne. OkaLaaitie teen agthonderd vyftig is die essensiëls: drie ontwerpe en 'n pamflet per week. Omtat, een duisend vyfhonderd, voeg motionreels en meer ruimte by. Mekulu, twee duisend vyfhonderd, is onbeperk — die hele kreatiewe span op aanvraag. Geen kontrak nie, maand vir maand. Kies die een wat by jou winkel pas." },
+    { id: 'next-steps', label: 'Volgende Stappe', text: "En dis die hele storie. Wanneer jy gereed is, tik die WhatsApp-knoppie en stuur ons een boodskap oor jou winkel — ons neem dit van daar af en wys jou presies hoe ons sou begin. Ons sien uit daarna om van jou te hoor." },
   ],
 };
 
@@ -58,6 +57,10 @@ export const mall: Script = {
     { id: 'next-steps', label: 'Next Steps', text: "And that's how Onawa Studio keeps a centre moving. When you're ready, tap the WhatsApp button and send us a message about your mall — we'll show you the plan that fits it. We're looking forward to hearing from you." },
   ],
   af: [
-    // FILL WHEN THE AFRIKAANS NARRATION IS APPROVED (same ids as en):
+    { id: 'problem', label: 'Die Werklikheid', text: "Die bestuur van 'n sentrum beteken om 'n hele dorp onder een dak aan die beweeg te hou. Huurders staar op jou vir voetverkeer — maar die ontwerpe, die aftellings en die veldtogte wat mense trek? Dis 'n sentrum op sy eie om te bestuur." },
+    { id: 'solution', label: 'Die Oplossing', text: "Ons hanteer jou sentrum se sosiale voer, huurder-promosies en besoeker-veldtogte — sodat die deure besig bly en jou huurders goed lyk." },
+    { id: 'proof', label: 'Die Bewys', text: "Dit is die standaard wat jy kry: gepoleerde, handelsmerkgetroue inhoud wat jou sentrum lewendig laat voel en mense redes gee om te kom kuier." },
+    { id: 'offers', label: 'Die Pakette', text: "Twee planne. Mall Buzz teen een duisend vyfhonderd hou jou sigbaar en bevorder jou huurders. Mall Buzz plus Web, twee duisend, voeg 'n webwerf by wat besoekers met jou sentrum verbind en voornemende huurders laat registreer. Kies die een wat by jou sentrum pas." },
+    { id: 'next-steps', label: 'Volgende Stappe', text: "En só hou Onawa Studio 'n sentrum aan die beweeg. Wanneer jy gereed is, tik die WhatsApp-knoppie en stuur ons 'n boodskap oor jou sentrum — ons wys jou die plan wat by dit pas. Ons sien uit daarna om van jou te hoor." },
   ],
 };
