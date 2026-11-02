@@ -1,0 +1,80 @@
+'use client';
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+export interface VoiceLine { id: string; label: string; text: string; }
+export interface Script { en: VoiceLine[]; af: VoiceLine[]; introEn: string; introAf: string; }
+interface Props { script: Script; }
+
+export function VoiceGuide({ script }: Props) {
+  const hasAf = script.af && script.af.length > 0;
+  const [lang, setLang] = useState<'en' | 'af'>('en');
+  const [started, setStarted] = useState(false);
+  const [currentLabel, setCurrentLabel] = useState<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playedRef = useRef<Set<string>>(new Set());
+
+  const lines = lang === 'af' && hasAf ? script.af : script.en;
+  const intro = lang === 'af' && hasAf ? script.introAf : script.introEn;
+
+  const stop = useCallback(() => {
+    const a = audioRef.current;
+    if (a) { a.pause(); a.currentTime = 0; }
+  }, []);
+
+  const speak = useCallback((line: VoiceLine | null) => {
+    if (!line) return;
+    stop();
+    setCurrentLabel(line.label);
+    const audio = new Audio(`/api/tts?text=${encodeURIComponent(line.text)}&lang=${lang}`);
+    audioRef.current = audio;
+    audio.play().catch(() => {});
+  }, [lang, stop]);
+
+  const advance = useCallback(() => {
+    const next = lines.find(l => !playedRef.current.has(l.id));
+    if (next) { speak(next); playedRef.current.add(next.id); }
+  }, [lines, speak]);
+
+  useEffect(() => {
+    if (!started) return;
+    playedRef.current.clear();
+    if (intro) { speak({ id: '__intro__', label: 'Welcome', text: intro }); playedRef.current.add('__intro__'); }
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        const id = (entry.target as HTMLElement).id;
+        if (playedRef.current.has(id)) continue;
+        const line = lines.find(l => l.id === id);
+        if (line) { speak(line); playedRef.current.add(id); }
+      }
+    }, { threshold: 0.35 });
+    lines.forEach(l => { const el = document.getElementById(l.id); if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, [started, lines, intro, speak]);
+
+  if (!started) {
+    return (
+      <button onClick={() => setStarted(true)}
+        className="fixed bottom-5 left-5 z-[60] inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#1c1c1e] text-white text-xs font-mono tracking-wider shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] hover:bg-[#DB0C36] transition-colors cursor-pointer">
+        <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-pulse" /> START TOUR
+      </button>
+    );
+  }
+
+  return (
+    <div className="fixed bottom-5 left-5 z-[60] flex items-center gap-2 px-3 py-2.5 rounded-full bg-[#1c1c1e]/85 backdrop-blur-md text-white shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] border border-white/10">
+      <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-pulse" />
+      <span className="text-[11px] font-mono tracking-wider text-zinc-300 max-w-[110px] truncate">{currentLabel ?? 'Ready'}</span>
+      {hasAf && (
+        <span className="flex rounded-full overflow-hidden border border-white/20">
+          <button onClick={() => setLang('en')} className={`px-2 text-[10px] font-mono ${lang==='en'?'bg-[#ccff00] text-black':'text-zinc-300'}`}>EN</button>
+          <button onClick={() => setLang('af')} className={`px-2 text-[10px] font-mono ${lang==='af'?'bg-[#ccff00] text-black':'text-zinc-300'}`}>AF</button>
+        </span>
+      )}
+      <button onClick={advance} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer" aria-label="next">⏭</button>
+      <button onClick={stop} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer" aria-label="stop">⏹</button>
+    </div>
+  );
+}
+
+export default VoiceGuide;
