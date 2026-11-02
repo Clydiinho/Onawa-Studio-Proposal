@@ -123,11 +123,15 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
         setStatus('idle');
         glowSection(undefined);
         if (line.id === 'intro') pulseNodes(false);
-        // The approved short closing line follows the packages section.
-        if (line.id === 'offers') {
-          const closing = lines.find((l) => l.id === 'next-steps');
-          if (closing && !playedRef.current.has('next-steps')) {
-            speak(closing);
+        // Smooth auto-chain: when a section finishes, play the next unplayed
+        // line in sequence so the tour flows without manual forward presses.
+        if (line.id !== 'next-steps') {
+          const currentIndex = lines.findIndex((l) => l.id === line.id);
+          const nextLine = lines
+            .slice(currentIndex + 1)
+            .find((l) => !playedRef.current.has(l.id));
+          if (nextLine) {
+            speak(nextLine);
             return;
           }
         }
