@@ -11,6 +11,8 @@ import { PillNav } from './components/PillNav';
 import { RetailStorePage } from './pages/RetailStorePage';
 import { ShoppingMallPage } from './pages/ShoppingMallPage';
 import { LanguageProvider, useLanguage } from './data/language';
+import VoiceGuide from './components/VoiceGuide';
+import { home } from './lib/voiceScripts';
 
 export type ProposalPage = 'home' | 'retail-store' | 'shopping-mall';
 
@@ -154,6 +156,10 @@ function SiteContent() {
         <ShoppingMallPage onNavigate={navigateTo} />
       ) : (
     <div className="min-h-screen bg-[#EFEFEF] text-gray-900 selection:bg-gray-900 selection:text-white font-sans antialiased text-base leading-[1.5]">
+      {/* Voice guide — greets on landing, then points at the folder options
+          (retail store / shopping mall). Falls back to TAP TO HEAR if the
+          browser blocks auto-play sound on a first, gestureless visit. */}
+      <VoiceGuide script={home} autoStart />
       {/* =========================================================================
           SECTION 1: HERO (Full viewport height)
       ========================================================================= */}

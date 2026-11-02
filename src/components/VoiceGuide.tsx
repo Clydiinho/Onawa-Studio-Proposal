@@ -3,13 +3,18 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface VoiceLine { id: string; label: string; text: string; }
 export interface Script { en: VoiceLine[]; af: VoiceLine[]; introEn: string; introAf: string; }
-interface Props { script: Script; }
+interface Props { script: Script; /** Auto-begin on mount (home page welcome). */ autoStart?: boolean; }
 
-export function VoiceGuide({ script }: Props) {
+export function VoiceGuide({ script, autoStart = false }: Props) {
   const hasAf = script.af && script.af.length > 0;
   const [lang, setLang] = useState<'en' | 'af'>('en');
   const [started, setStarted] = useState(false);
   const [currentLabel, setCurrentLabel] = useState<string | null>(null);
+  // Browsers block audio.play() without a user gesture (autoplay policy).
+  // When the page tries to auto-play a welcome line on landing, the browser
+  // may reject it — then the widget shows TAP TO HEAR; one tap (a real
+  // gesture) starts the same audio without regenerating it.
+  const [needsTap, setNeedsTap] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const playedRef = useRef<Set<string>>(new Set());
 
@@ -21,23 +26,43 @@ export function VoiceGuide({ script }: Props) {
     if (a) { a.pause(); a.currentTime = 0; }
   }, []);
 
+  // Leaving the page stops the narration so the next page's guide starts clean.
+  useEffect(() => () => stop(), [stop]);
+
   const speak = useCallback((line: VoiceLine | null) => {
     if (!line) return;
     stop();
     setCurrentLabel(line.label);
     const audio = new Audio(`/api/tts?text=${encodeURIComponent(line.text)}&lang=${lang}`);
     audioRef.current = audio;
-    audio.play().catch(() => {});
+    audio.play().catch((err: unknown) => {
+      if ((err as DOMException)?.name === 'NotAllowedError') setNeedsTap(true);
+    });
   }, [lang, stop]);
+
+  const retryFromTap = useCallback(() => {
+    const a = audioRef.current;
+    if (!a) { setNeedsTap(false); return; }
+    a.play()
+      .then(() => setNeedsTap(false))
+      .catch(() => setNeedsTap(true));
+  }, []);
 
   const advance = useCallback(() => {
     const next = lines.find(l => !playedRef.current.has(l.id));
     if (next) { speak(next); playedRef.current.add(next.id); }
   }, [lines, speak]);
 
+  // Welcome-on-landing pages (home): skip the START TOUR button entirely —
+  // the guide begins by itself as soon as the component mounts.
+  useEffect(() => {
+    if (autoStart) setStarted(true);
+  }, [autoStart]);
+
   useEffect(() => {
     if (!started) return;
     playedRef.current.clear();
+    setNeedsTap(false);
     if (intro) { speak({ id: '__intro__', label: 'Welcome', text: intro }); playedRef.current.add('__intro__'); }
     const observer = new IntersectionObserver((entries) => {
       for (const entry of entries) {
@@ -64,7 +89,13 @@ export function VoiceGuide({ script }: Props) {
   return (
     <div className="fixed bottom-5 left-5 z-[60] flex items-center gap-2 px-3 py-2.5 rounded-full bg-[#1c1c1e]/85 backdrop-blur-md text-white shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)] border border-white/10">
       <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-pulse" />
-      <span className="text-[11px] font-mono tracking-wider text-zinc-300 max-w-[110px] truncate">{currentLabel ?? 'Ready'}</span>
+      {needsTap ? (
+        <button onClick={retryFromTap} className="text-[11px] font-mono font-bold tracking-wider text-[#ccff00] max-w-[110px] truncate cursor-pointer">
+          TAP TO HEAR
+        </button>
+      ) : (
+        <span className="text-[11px] font-mono tracking-wider text-zinc-300 max-w-[110px] truncate">{currentLabel ?? 'Ready'}</span>
+      )}
       {hasAf && (
         <span className="flex rounded-full overflow-hidden border border-white/20">
           <button onClick={() => setLang('en')} className={`px-2 text-[10px] font-mono ${lang==='en'?'bg-[#ccff00] text-black':'text-zinc-300'}`}>EN</button>

@@ -65,9 +65,11 @@ export async function GET(req: Request) {
       },
     });
   } catch (err) {
-    // Surface gateway/TTS failures in the Vercel function logs while keeping
-    // the browser response generic (no provider internals leaked).
+    // Surface gateway/TTS failures in the Vercel function logs AND in the
+    // response body (AI SDK error messages contain model id/status, no
+    // secrets, so this is safe to expose) — makes deployed debugging possible.
     console.error(`[tts] lang=${lang} text=${text.slice(0, 80)}...`, err);
-    return new Response('tts generation failed', { status: 502 });
+    const detail = err instanceof Error ? err.message.slice(0, 300) : String(err);
+    return new Response(`tts generation failed: ${detail}`, { status: 502 });
   }
 }

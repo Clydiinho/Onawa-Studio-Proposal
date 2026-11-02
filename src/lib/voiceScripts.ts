@@ -18,6 +18,16 @@
 export interface VoiceLine { id: string; label: string; text: string; }
 export interface Script { en: VoiceLine[]; af: VoiceLine[]; introEn: string; introAf: string; }
 
+// HOME — greets the visitor the moment they land, and hands them over to the
+// two folder options (retail store / shopping mall). No section lines: the
+// proposal pages carry their own narrated tours from there.
+export const home: Script = {
+  introEn: "Welcome to Onawa Studio. I am your personal guide. Choose the option that best describes your business — a retail store, or a shopping mall. I will then show you, section by section, exactly what we would do for you. Take your time. I am right here.",
+  introAf: "Welkom by Onawa Studio. Ek is jou persoonlike gids. Kies die opsie wat die beste by jou besigheid pas — 'n winkel, of 'n winkelsentrum. Ek wys jou daarna, afdeling vir afdeling, presies wat ons vir jou sal doen. Neem jou tyd. Ek is hier.",
+  en: [],
+  af: [],
+};
+
 export const retail: Script = {
   introEn: "Welcome to Onawa Studio. I ll show you how we keep your store looking busy — one section at a time. Ready? Let s go.",
   introAf: "Welkom by Onawa Studio. Ek wys jou hoe ons jou winkel aan die gang hou — een afdeling op 'n slag. Gereed? Kom ons gaan.",
