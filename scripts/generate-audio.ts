@@ -248,7 +248,7 @@ function fullJobs(): Job[] {
         });
       }
       for (const line of lines) {
-        jobs.push({ file: `${page}-${line.id}-${lang}.mp3`, text: line.text, persona: voiceFor[lang], lang });
+        jobs.push({ file: `${page}-${line.id}.mp3`, text: line.text, persona: voiceFor[lang], lang });
       }
     }
   }
