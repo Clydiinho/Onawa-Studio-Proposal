@@ -159,7 +159,7 @@ function SiteContent() {
       {/* Voice guide — greets on landing, then points at the folder options
           (retail store / shopping mall). Falls back to TAP TO HEAR if the
           browser blocks auto-play sound on a first, gestureless visit. */}
-      <VoiceGuide script={home} autoStart />
+      <VoiceGuide script={home} assetPrefix="home" autoStart />
       {/* =========================================================================
           SECTION 1: HERO (Full viewport height)
       ========================================================================= */}
