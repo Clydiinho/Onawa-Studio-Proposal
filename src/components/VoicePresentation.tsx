@@ -275,6 +275,9 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
       (entries) => {
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
+          // Never cut off the narrator mid-sentence: if a line is currently
+          // speaking, let it finish — the auto-chain will reach this section.
+          if (speakingRef.current) continue;
           const id = (entry.target as HTMLElement).id;
           if (playedRef.current.has(id)) continue;
           const line = targets.find((l) => l.id === id);
