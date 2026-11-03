@@ -33,29 +33,29 @@ interface ShoppingMallPageProps {
 // CAMPAIGN DEMO CONTENT — FICTIONAL SHOPPING CENTRE "ONAWA CENTRAL"
 // Every mall, campaign, price, event and follower count here is demonstration
 // content created by Onawa Studio (explicitly disclosed on-page in the Proof
-// section). Stock imagery + footage; not real client work.
+// section). Stock imagery + footage, plus the supplied Mall_owner_thinking.mp4
+// clip; not real client work.
 // =============================================================================
 
 const makeMallCampaigns = (t: (en: string, af: string) => string) => [
   {
     id: 'mall-1',
     title: t(
-      'Weekend Food Market // Live Music in the Food Court',
-      'Naweek Kosmark // Regstreekse Musiek in die Koswerf'
+      'Mall-Wide Weekend // Late-Night Shopping & Live Music',
+      'Sentrum-Wye Naweek // Laatnag-Inkopies & Regstreekse Musiek'
     ),
     image:
       'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop',
-    video:
-      'https://assets.mixkit.co/videos/preview/mixkit-fresh-vegetables-falling-in-water-41551-large.mp4',
+    video: '/Mall_owner_thinking.mp4',
     caption: t(
-      'The Weekend Food Market is ON at Onawa Central! Forty stalls, live music from 6pm & the food court staying open late. Bring the whole crew. 🔥🛒',
-      'Die Naweek Kosmark is AAN by Onawa Central! Veertig stalletjies, regstreekse musiek vanaf 6nm & die koswerf bly laat oop. Bring die hele gesin. 🔥🛒'
+      'Onawa Central is open late this weekend! Every level trading until 9pm, live music in the atrium, and tenant specials right across the centre. Bring the whole crew. 🔥🛍',
+      'Onawa Central is hierdie naweek laat oop! Elke vlak handel tot 21:00, regstreekse musiek in die atrium, en huurder-spesiale regoor die sentrum. Bring die hele gesin. 🔥🛍'
     ),
     hashtags: t(
-      '#OnawaCentral #WeekendMarket #FoodCourt #LiveMusic #FamilyWeekend',
-      '#OnawaCentral #NaweekMark #Koswerf #RegstreekseMusiek #GesinsNaweek'
+      '#OnawaCentral #LateNightShopping #MallLife #LiveMusic #WeekendAtTheMall',
+      '#OnawaCentral #LaatnagInkopies #Sentrumlewe #RegstreekseMusiek #NaweekInDieSentrum'
     ),
-    price: t('FRIDAY 4–9PM', 'VRYDAG 16:00–21:00'),
+    price: t('FRI–SUN · UNTIL 9PM', 'VRY–SON · TOT 21:00'),
     likes: '2.1k',
     comments: '194',
     shares: '610',
@@ -701,7 +701,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
             <div className="lg:col-span-6 relative">
               <div className="relative rounded-3xl overflow-hidden bg-zinc-950 border-2 border-black/10 shadow-[0_30px_60px_rgba(0,0,0,0.18)] aspect-[16/10] group">
                 <video
-                  src="https://assets.mixkit.co/videos/preview/mixkit-fresh-vegetables-falling-in-water-41551-large.mp4"
+                  src="/Mall_owner_thinking.mp4"
                   autoPlay
                   loop
                   muted
@@ -711,7 +711,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
                 <div className="absolute bottom-4 left-4 px-3.5 py-1.5 rounded-full bg-black/70 backdrop-blur-md border border-white/20 text-[#ccff00] font-mono text-xs font-bold flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-[#ccff00] animate-pulse" />
-                  <span>LIVE FOOTAGE // {t('WEEKEND FOOD MARKET', 'NAWEEK KOSMARK')}</span>
+                  <span>LIVE FOOTAGE // {t('MALL OWNER, THINKING IT OVER', 'SENTRUMEENAAR, AAN DIE DINK')}</span>
                 </div>
               </div>
             </div>
