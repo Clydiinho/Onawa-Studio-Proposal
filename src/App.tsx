@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowRight, Languages } from 'lucide-react';
 import { Shader, Swirl, ChromaFlow, FlutedGlass, FilmGrain } from 'shaders/react';
+import { Analytics } from '@vercel/analytics/react';
 import { InteractiveFolders } from './components/InteractiveFolders';
 import { PillNav } from './components/PillNav';
 import { RetailStorePage } from './pages/RetailStorePage';
@@ -241,6 +242,7 @@ function SiteContent() {
       </section>
     </div>
       )}
+      <Analytics />
     </>
   );
 }
