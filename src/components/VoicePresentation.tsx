@@ -151,6 +151,16 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
       audio.play().catch((err: unknown) => {
         if ((err as DOMException)?.name === 'NotAllowedError') setStatus('blocked');
       });
+
+      // Warm the next clip in the background so the hand-off between
+      // sections is seamless instead of a network-stalled gap.
+      const idx = lines.findIndex((l) => l.id === line.id);
+      const upcoming = lines.slice(idx + 1).find((l) => !playedRef.current.has(l.id));
+      if (upcoming) {
+        const warm = new Audio(audioUrl(page, upcoming.id, lang));
+        warm.preload = 'auto';
+        warm.load();
+      }
     },
     [glowSection, lang, langReady, lines, muted, page, pulseNodes, stopAudio]
   );
@@ -252,7 +262,11 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoStart]);
 
-  // In-view sequencing + auto-pause when the narrated section leaves view.
+  // In-view sequencing. Sections are auto-chained on `ended`, so this only
+  // covers the case where the visitor scrolls to a section that has not been
+  // narrated yet. Playback is NEVER auto-paused mid-sentence: scrolling used
+  // to stop the narrator dead (brief glitches/stops) — the tour now plays
+  // continuously and the visitor pauses manually if they want to.
   useEffect(() => {
     if (!started) return;
     const targets = lines.filter((l) => l.id !== 'intro' && l.id !== 'next-steps');
@@ -260,13 +274,8 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
           const id = (entry.target as HTMLElement).id;
-          if (!entry.isIntersecting) {
-            // Narrated section scrolled out of the visitor's control → pause
-            // (manual resume; no force-scroll, no auto-navigation).
-            if (lineRef.current?.id === id && speakingRef.current) audioRef.current?.pause();
-            continue;
-          }
           if (playedRef.current.has(id)) continue;
           const line = targets.find((l) => l.id === id);
           if (line) speak(line);
