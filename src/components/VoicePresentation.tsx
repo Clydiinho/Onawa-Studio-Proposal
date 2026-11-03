@@ -9,14 +9,16 @@
  * Contracts (from the project brief):
  *  - Language follows the SITE-WIDE EN/AF toggle (localStorage `onawa_lang`),
  *    never a separate voice-only switch.
- *  - If the page language is Afrikaans but no Afrikaans narration has been
- *    generated (script.af empty), the player shows "AF AUDIO PENDING" and
- *    stays quiet — English audio is NEVER substituted.
+ *  - If the page language is Afrikaans but no Afrikaans narration exists for
+ *    THIS PAGE (no section lines AND no intro), the player shows
+ *    "AF AUDIO COMING SOON" and stays quiet — English audio is NEVER
+ *    substituted. A page whose Afrikaans narration is intro-only (the home
+ *    page) counts as available.
  *  - Browsers block gestureless autoplay: the tour tries to start (homepage
  *    welcome) and if playback is refused, a discreet START PRESENTATION
  *    button appears. Nothing bypasses browser policy.
- *  - Narration auto-pauses when the section being narrated leaves the
- *    visitor's view; resuming is manual. No force-scroll, no auto-navigation.
+ *  - Playback runs continuously (sections auto-chain) and is never stopped by
+ *    scrolling; the visitor pauses manually. No force-scroll, no auto-navigation.
  *  - Single audio element — overlapping/duplicate playback is impossible.
  *  - Section leaving/arriving uses the existing section anchor ids
  *    (problem/solution/proof/offers on both proposal pages); the short
@@ -42,7 +44,12 @@ type Status = 'idle' | 'playing' | 'paused' | 'blocked' | 'done';
 
 export function VoicePresentation({ page, script, autoStart = false, pulseSelector }: Props) {
   const { lang } = useLanguage();
-  const afReady = script.af.length > 0;
+  // Readiness is per PAGE, not per section list. The home page's entire
+  // Afrikaans narration is its intro (script.af is empty by design), so
+  // checking only script.af wrongly reported "no Afrikaans audio" there and
+  // the player announced AF AUDIO COMING SOON although home-intro.mp3 was
+  // deployed and playable.
+  const afReady = script.af.length > 0 || script.introAf.trim().length > 0;
   const langReady = lang === 'en' || afReady;
 
   const lines: VoiceLine[] = useMemo(() => {
@@ -50,7 +57,9 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
     const intro = lang === 'af' ? script.introAf : script.introEn;
     const body = lang === 'af' ? script.af : script.en;
     const all: VoiceLine[] = [];
-    if (intro.trim().length > 0) all.push({ id: 'intro', label: 'Welcome', text: intro });
+    if (intro.trim().length > 0) {
+      all.push({ id: 'intro', label: lang === 'af' ? 'Welkom' : 'Welcome', text: intro });
+    }
     all.push(...body);
     return all;
   }, [lang, afReady, script]);
@@ -65,6 +74,7 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
   const playedRef = useRef<Set<string>>(new Set());
   const statusRef = useRef<Status>('idle');
   const speakingRef = useRef(false);
+  const startedRef = useRef(false);
   statusRef.current = status;
 
   /* ── visual feedback helpers (subtle, CSS-only, Onawa identity) ── */
@@ -167,10 +177,15 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
 
   /* ── controls ── */
   const start = useCallback(() => {
+    startedRef.current = true;
     setStarted(true);
     const introLine = lines.find((l) => l.id === 'intro');
     if (introLine) speak(introLine);
   }, [lines, speak]);
+
+  // Latest start() for effects that must not re-subscribe on every render.
+  const startRef = useRef(start);
+  startRef.current = start;
 
   const pauseOrResume = useCallback(() => {
     const a = audioRef.current;
@@ -229,6 +244,7 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
 
   const endTour = useCallback(() => {
     stopAudio();
+    startedRef.current = false;
     lineRef.current = null;
     playedRef.current.clear();
     setStarted(false);
@@ -245,12 +261,26 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
   }, []);
 
   /* ── effects ── */
-  // Language switch mid-tour: stop immediately — audio must never echo a
-  // language different from the text on screen.
+  // Language switch: audio must never echo a language different from the text
+  // on screen. Stop, reset the played history, and — if the tour was running —
+  // start again in the new language (the toggle is a user gesture, so the
+  // browser permits playback). Without the restart the player was left with
+  // dead controls after a switch.
+  const firstLangRef = useRef(true);
   useEffect(() => {
+    const isFirstRun = firstLangRef.current;
+    firstLangRef.current = false;
     stopAudio();
-    if (lang === 'af' && !afReady) setLabel('AF AUDIO COMING SOON');
-  }, [lang, afReady, stopAudio]);
+    playedRef.current.clear();
+    lineRef.current = null;
+    setStatus('idle');
+    if (isFirstRun) return;
+
+    const wasRunning = startedRef.current;
+    setStarted(false);
+    setLabel(null);
+    if (wasRunning) startRef.current();
+  }, [lang, stopAudio]);
 
   // Unmount: kill audio (page switches must not leave narration talking).
   useEffect(() => stopAudio, [stopAudio]);
@@ -294,6 +324,16 @@ export function VoicePresentation({ page, script, autoStart = false, pulseSelect
   }, [started, lines, speak]);
 
   /* ── render ── */
+  // Afrikaans requested but this page genuinely has no Afrikaans narration:
+  // show an honest notice instead of a player with dead controls.
+  if (!langReady) {
+    return (
+      <div className="fixed bottom-5 left-5 z-[60] inline-flex items-center gap-2 px-4 py-3 rounded-full bg-[#1c1c1e]/85 backdrop-blur-md text-white border border-white/10 text-[11px] font-mono tracking-wider shadow-[0_18px_40px_-12px_rgba(0,0,0,0.6)]">
+        <span className="w-2 h-2 rounded-full bg-zinc-500" /> AF AUDIO COMING SOON
+      </div>
+    );
+  }
+
   if (!started) {
     return (
       <button
