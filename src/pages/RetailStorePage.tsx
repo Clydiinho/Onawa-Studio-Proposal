@@ -360,6 +360,9 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
   const [isLiked, setIsLiked] = useState(false);
   const [isExpandedImage, setIsExpandedImage] = useState(false);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
+  // Background videos are mounted but kept unloaded until their row is active,
+  // so a visitor never downloads footage they have not looked at.
+  const featureVideoRefs = useRef<Array<HTMLVideoElement | null>>([]);
   const heroRef = useRef<HTMLHeadingElement>(null);
 
   // Width fit for "DESERVES": ratio of line-1's width to "DESERVES"'s
@@ -416,7 +419,19 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const features = [
+  const features: Array<{
+    id: number;
+    title: string;
+    desc: string;
+    icon: React.ReactNode;
+    tag: string;
+    /** Still background. */
+    bgImage?: string;
+    /** Footage background — plays only while its row is active. */
+    bgVideo?: string;
+    /** First frame, so switching to footage never flashes black. */
+    bgPoster?: string;
+  }> = [
     {
       id: 1,
       title: t('Promotional designs', 'Promosie-ontwerpe'),
@@ -426,7 +441,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       ),
       icon: <Tag className="w-5 h-5 text-[#ccff00]" />,
       tag: t('01 // PROMOS', '01 // PROMOSIES'),
-      bgImage: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?q=80&w=1600&auto=format&fit=crop',
+      bgImage: '/assets/promotional designs.jpg',
     },
     {
       id: 2,
@@ -437,7 +452,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       ),
       icon: <FileText className="w-5 h-5 text-[#ccff00]" />,
       tag: t('02 // CIRCULARS', '02 // WINKELBLAAIE'),
-      bgImage: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1600&auto=format&fit=crop',
+      bgImage: '/assets/digital leaflets.jpg',
     },
     {
       id: 3,
@@ -448,7 +463,8 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       ),
       icon: <Film className="w-5 h-5 text-[#ccff00]" />,
       tag: t('03 // MOTION LAB', '03 // MOTION-LAB'),
-      bgImage: 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?q=80&w=1600&auto=format&fit=crop',
+      bgVideo: '/assets/motion graphics.mp4',
+      bgPoster: '/assets/motion graphics poster.jpg',
     },
     {
       id: 4,
@@ -459,7 +475,7 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       ),
       icon: <Share2 className="w-5 h-5 text-[#ccff00]" />,
       tag: t('04 // MULTI-FEED', '04 // MULTI-FEED'),
-      bgImage: 'https://images.unsplash.com/photo-1534536281715-e28d76684b5d?q=80&w=1600&auto=format&fit=crop',
+      bgImage: '/assets/social content & publishing.jpg',
     },
     {
       id: 5,
@@ -470,9 +486,25 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
       ),
       icon: <Globe className="w-5 h-5 text-[#ccff00]" />,
       tag: t('05 // DIGITAL STORE', '05 // DIGITALE WINKEL'),
-      bgImage: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?q=80&w=1600&auto=format&fit=crop',
+      // Portrait source: object-cover fills the frame (crops, never letterboxes).
+      bgVideo: '/assets/websites & apps.mp4',
+      bgPoster: '/assets/websites & apps poster.jpg',
     },
   ];
+
+  // Background footage follows the highlighted row: play it when that row is
+  // active, pause it otherwise. With preload="none" the file is only fetched
+  // when a visitor first reaches the row, so the page stays light.
+  useEffect(() => {
+    featureVideoRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      if (idx === activeFeatureIndex) {
+        void el.play().catch(() => {});
+      } else if (!el.paused) {
+        el.pause();
+      }
+    });
+  }, [activeFeatureIndex]);
 
   return (
     <div className="relative min-h-screen text-[#1c1c1e] selection:bg-[#ccff00] selection:text-black overflow-x-hidden">
@@ -788,11 +820,28 @@ export const RetailStorePage: React.FC<RetailStorePageProps> = ({ onNavigate }) 
                 activeFeatureIndex === idx ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
               }`}
             >
-              <img
-                src={feature.bgImage}
-                alt={feature.title}
-                className="w-full h-full object-cover filter brightness-95 contrast-105"
-              />
+              {feature.bgVideo ? (
+                <video
+                  ref={(el) => {
+                    featureVideoRefs.current[idx] = el;
+                  }}
+                  src={feature.bgVideo}
+                  poster={feature.bgPoster}
+                  loop
+                  muted
+                  playsInline
+                  preload="none"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  className="w-full h-full object-cover filter brightness-95 contrast-105"
+                />
+              ) : (
+                <img
+                  src={feature.bgImage}
+                  alt={feature.title}
+                  className="w-full h-full object-cover filter brightness-95 contrast-105"
+                />
+              )}
             </div>
           ))}
           <div className="absolute inset-0 bg-black/45 pointer-events-none" />
