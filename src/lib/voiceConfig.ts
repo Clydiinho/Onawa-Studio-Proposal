@@ -50,7 +50,11 @@ export const VOICE_EN: VoicePersona = {
 
 export const VOICE_AF: VoicePersona = {
   voice: 'nl-nl-assistant-3',
-  style: 'warm, relaxed and friendly, natural conversational Afrikaans — clear pronunciation, no newsreader formality',
+  // NOTE: an explicit speech_config language pin ('af' or 'af-ZA') is rejected
+  // by the API for this Extended-Library voice ("No matching speaker voice"),
+  // so the language must be carried by the text style below.
+  style:
+    'praat suiwer Suid-Afrikaanse Afrikaans, nie Nederlands nie — warm, ontspanne en vriendelik, elke woord en getal duidelik in Afrikaans uitgespreek, geen nuusleser-formaliteit',
   label: 'Afrikaans — youthful Dutch-branch male rendering native-family Afrikaans (Extended Library nl-nl-assistant-3)',
 };
 

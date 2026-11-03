@@ -107,6 +107,22 @@ function isQuotaError(err: unknown): boolean {
   return /\b429\b|RESOURCE_EXHAUSTED|quota/i.test(msg);
 }
 
+/** Per-minute throttling (retry shortly) vs per-day exhaustion (switch key / stop). */
+function isPerMinuteLimit(err: unknown): boolean {
+  return /per minute/i.test(String((err as { message?: string })?.message ?? err));
+}
+
+/** Parse "retry in 1h2m3s" from the API error; default to just over a minute. */
+function retryDelayMs(err: unknown): number {
+  const msg = String((err as { message?: string })?.message ?? err);
+  const m = msg.match(/retry in (?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?/i);
+  if (!m) return 65_000;
+  const ms = (Number(m[1] ?? 0) * 3600 + Number(m[2] ?? 0) * 60 + Number(m[3] ?? 0)) * 1000;
+  return ms > 0 ? ms : 65_000;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
  * WAV (Unisys RIFF) payload extraction: returns the raw 16-bit mono PCM.
  * Gemini TTS unary responses are complete WAV files per the docs; we locate
@@ -241,7 +257,7 @@ function fullJobs(): Job[] {
       if (!hasNarration && !hasIntro) continue;
       if (hasIntro) {
         jobs.push({
-          file: `${page}-intro-${lang}.mp3`,
+          file: `${page}-intro.mp3`,
           text: intro,
           persona: voiceFor[lang],
           lang,
@@ -297,9 +313,10 @@ async function run(): Promise<void> {
     const absPath = join(dir, job.file);
     mkdirSync(dir, { recursive: true });
 
-    // Retry loop: on quota exhaustion on the current key, rotate to the next
-    // key (each key = its own project = its own daily free allowance) and
-    // retry THIS file. Stop loudly when every key is drained.
+    // Retry loop: per-minute throttling waits and retries; daily exhaustion
+    // rotates to the next key (each key = its own project = its own daily free
+    // allowance) and retries THIS file. Stop loudly when every key is drained.
+    let rpmWaits = 0;
     for (;;) {
       try {
         const mp3 = await generateLine(job.text, job.persona, apiKeys[keyIndex]);
@@ -308,6 +325,20 @@ async function run(): Promise<void> {
         console.log(`✓ ${job.file}  ${(mp3.length / 1024).toFixed(0)} KB  [${job.persona.voice}]`);
         break;
       } catch (err) {
+        if (isQuotaError(err) && isPerMinuteLimit(err)) {
+          rpmWaits++;
+          if (rpmWaits > 6) {
+            failed++;
+            console.error(`\n✗ ${job.file} — per-minute limit persisted after ${rpmWaits - 1} waits; skipping.`);
+            break;
+          }
+          const wait = retryDelayMs(err) + 1500;
+          console.log(
+            `\n→ Per-minute limit hit; waiting ${Math.ceil(wait / 1000)}s, then retrying ${job.file}...`
+          );
+          await sleep(wait);
+          continue;
+        }
         if (isQuotaError(err) && keyIndex < apiKeys.length - 1) {
           keyIndex++;
           console.log(
@@ -331,7 +362,7 @@ async function run(): Promise<void> {
       }
     }
     // Pace the free-tier requests; TTS models have low per-minute limits.
-    await new Promise((r) => setTimeout(r, 800));
+    await sleep(2500);
   }
 
   console.log(`\nDone: ${generated} generated${failed ? `, ${failed} FAILED` : ''}.`);
