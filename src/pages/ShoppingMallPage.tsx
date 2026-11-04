@@ -338,6 +338,9 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
   const [isExpandedImage, setIsExpandedImage] = useState(false);
   const [activeFeatureIndex, setActiveFeatureIndex] = useState(0);
   const heroRef = useRef<HTMLHeadingElement>(null);
+  // Background footage is mounted but kept unloaded until its row is active,
+  // so a visitor never downloads a clip they have not looked at.
+  const featureVideoRefs = useRef<Array<HTMLVideoElement | null>>([]);
 
   // Width fit for the hero's middle line: measures "Jou sentrum"'s width against
   // "HET MEER"'s natural width and writes the ratio into --title-fit.
@@ -395,7 +398,19 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
     window.open(url, '_blank', 'noopener,noreferrer');
   };
 
-  const features = [
+  const features: Array<{
+    id: number;
+    title: string;
+    desc: string;
+    icon: React.ReactNode;
+    tag: string;
+    /** Still background. */
+    bgImage?: string;
+    /** Footage background — plays only while its row is active. */
+    bgVideo?: string;
+    /** First frame, so switching to footage never flashes black. */
+    bgPoster?: string;
+  }> = [
     {
       id: 1,
       title: t('Tenant promo designs', 'Huurder-promosie-ontwerpe'),
@@ -405,7 +420,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
       ),
       icon: <Tag className="w-5 h-5 text-[#ccff00]" />,
       tag: t('01 // TENANTS', '01 // HUURDERS'),
-      bgImage: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1600&auto=format&fit=crop',
+      bgImage: '/assets/tenant promo designs.jpeg',
     },
     {
       id: 2,
@@ -416,7 +431,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
       ),
       icon: <Share2 className="w-5 h-5 text-[#ccff00]" />,
       tag: t('02 // CAMPAIGNS', '02 // VELDTOGTE'),
-      bgImage: 'https://images.unsplash.com/photo-1516550893923-42d28e5677af?q=80&w=1600&auto=format&fit=crop',
+      bgImage: '/assets/Mall-wide campaigns.jpeg',
     },
     {
       id: 3,
@@ -427,7 +442,7 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
       ),
       icon: <Calendar className="w-5 h-5 text-[#ccff00]" />,
       tag: t('03 // EVENT DEPT', '03 // GEBEURTENISDEPT'),
-      bgImage: 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?q=80&w=1600&auto=format&fit=crop',
+      bgImage: '/assets/Events & new openings.jpeg',
     },
     {
       id: 4,
@@ -438,7 +453,9 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
       ),
       icon: <Film className="w-5 h-5 text-[#ccff00]" />,
       tag: t('04 // MOTION LAB', '04 // MOTION-LAB'),
-      bgImage: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=1600&auto=format&fit=crop',
+      // Shared with the retail page: same footage, same first-frame poster.
+      bgVideo: '/assets/motion graphics.mp4',
+      bgPoster: '/assets/motion graphics poster.jpg',
     },
     {
       id: 5,
@@ -449,9 +466,24 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
       ),
       icon: <Globe className="w-5 h-5 text-[#ccff00]" />,
       tag: t('05 // MULTI-FEED', '05 // MULTI-FEED'),
-      bgImage: 'https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?q=80&w=1600&auto=format&fit=crop',
+      // Shared with the retail page.
+      bgImage: '/assets/social content & publishing.jpg',
     },
   ];
+
+  // Background footage follows the highlighted row: play it when that row is
+  // active, pause it otherwise. With preload="none" the file is only fetched
+  // when a visitor first reaches the row, so the page stays light.
+  useEffect(() => {
+    featureVideoRefs.current.forEach((el, idx) => {
+      if (!el) return;
+      if (idx === activeFeatureIndex) {
+        void el.play().catch(() => {});
+      } else if (!el.paused) {
+        el.pause();
+      }
+    });
+  }, [activeFeatureIndex]);
 
   return (
     <div className="relative min-h-screen text-[#1c1c1e] selection:bg-[#ccff00] selection:text-black overflow-x-hidden">
@@ -767,11 +799,28 @@ export const ShoppingMallPage: React.FC<ShoppingMallPageProps> = ({ onNavigate }
                 activeFeatureIndex === idx ? 'opacity-100 scale-100' : 'opacity-0 scale-105'
               }`}
             >
-              <img
-                src={feature.bgImage}
-                alt={feature.title}
-                className="w-full h-full object-cover filter brightness-95 contrast-105"
-              />
+              {feature.bgVideo ? (
+                <video
+                  ref={(el) => {
+                    featureVideoRefs.current[idx] = el;
+                  }}
+                  src={feature.bgVideo}
+                  poster={feature.bgPoster}
+                  loop
+                  muted
+                  playsInline
+                  preload="none"
+                  aria-hidden="true"
+                  tabIndex={-1}
+                  className="w-full h-full object-cover filter brightness-95 contrast-105"
+                />
+              ) : (
+                <img
+                  src={feature.bgImage}
+                  alt={feature.title}
+                  className="w-full h-full object-cover filter brightness-95 contrast-105"
+                />
+              )}
             </div>
           ))}
           <div className="absolute inset-0 bg-black/45 pointer-events-none" />
