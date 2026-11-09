@@ -9,3 +9,8 @@ coverage/
 tsconfig.tsbuildinfo
 .opencode/
 voice-samples/
+
+# Raw master media stays local - the site only loads the optimised copies in proof/web/
+/public/assets/proof/*
+!/public/assets/proof/web/
+
